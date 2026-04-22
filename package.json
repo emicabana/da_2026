@@ -1,0 +1,24 @@
+{
+  "name": "da_2026",
+  "version": "1.0.0",
+  "description": "",
+  "homepage": "https://github.com/emicabana/da_2026#readme",
+  "bugs": {
+    "url": "https://github.com/emicabana/da_2026/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emicabana/da_2026.git"
+  },
+  "license": "MIT",
+  "author": "Emiliano C",
+  "type": "module",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  }
+}

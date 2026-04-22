@@ -1,6 +1,6 @@
-import { addDependency } from "./dependecy";    
-import { UserService } from "./services/userService";
-import { UserMockup } from "./services/userMockup";
+import { addDependency } from "./dependecy.js";    
+import { UserService } from "./services/user_services.js";
+import { UserMockup } from "./services/user_mockup.js";
 
 addDependency("userService", new UserService());
 addDependency("userMockup", new UserMockup()); 

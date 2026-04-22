@@ -1,4 +1,4 @@
-import { getDependency } from "../dependecy";
+import { getDependency } from "../dependecy.js";
 
 export function configureUserRouter(router) {
     console.log("Configuring user router...");

@@ -1,25 +1,33 @@
 import { getDependency } from "../dependecy.js";
+import bcrypt from "bcrypt";
 
 export class UserService {
     constructor() {
+        this.userRepo = getDependency("userRepo");
     }
 
-    getList() {
-        const userRepo = getDependency("userRepo");
-        return userRepo.getList();
+    async getList() {
+        return await this.userRepo.find();
     }
 
-    create(data) {
-        const user = getDependency("userRepo").create(data);
-        if (!user) return null;
-        return user;
-    }
+    async add(user) {
+        if (!user.user_name)
+            throw new Error("El nombre de usuario es obligatorio");
 
-    update(id, data) {
-        return getDependency("userRepo").update(id, data);
-    }
+        if (!user.password)
+            throw new Error("La contraseña es obligatoria");
 
-    delete(id) {
-        return getDependency("userRepo").delete(id);
+        if (user.password === "1234")
+            throw new Error("La contraseña no puede ser '1234'");
+        
+        const existentUser = await this.userRepo.find({
+            user_name: user.user_name
+        });
+        if (existentUser.getList)
+            throw new Error("El nombre de usuario ya existe");
+
+        user.password = bcrypt.hashSync(user.password, 10);
+
+        return this.userRepo.create(user);
     }
 }

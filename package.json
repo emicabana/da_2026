@@ -19,10 +19,14 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "start": "node server.js"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "express": "^5.2.1",
+    "mogoose": "^0.0.1-security",
+    "mongoose": "^9.6.3",
     "nodemon": "^3.1.14"
   }
 }

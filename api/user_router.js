@@ -7,11 +7,13 @@ export function configureUserRouter(router) {
     console.log("Configurando rutas de usuario...");
     router.get("/users", checkRoleMiddleware("admin"), async (req, res) => {
         const users = await userService.getAllUsers();
-        res.json(users);
+        res.json(users.map(user => ({
+            id: user.id,
             user_name: user.user_name,
             display_name: user.display_name,
             email: user.email,
-            role: user.role,
+            role: user.role
+        })));
     });
 
 router.post("/users/:id", checkRoleMiddleware("admin"), async (req, res) => {

@@ -1,26 +1,61 @@
+### Login
 POST http://localhost:3000/api/login
 Content-Type: application/json
 
 {
-    "username": "admin",
-    "password": "1234"
+    "user_name": "admin",
+    "password": "admin1234"
 }
 
 ###
 
-@authorizationToken = {{response.body.authorizationToken}}
+@authorizationToken = <reemplazar con el token devuelto por Login>
+@username = nuevo_usuario
 
+### GET - Listar todos los usuarios
 GET http://localhost:3000/api/users
 Authorization: Bearer {{authorizationToken}}
 
 ###
-POST http://localhost:3000/api/login
+
+### GET - Obtener un usuario por username
+GET http://localhost:3000/api/users/{{username}}
+Authorization: Bearer {{authorizationToken}}
+
+###
+
+### POST - Crear usuario
+POST http://localhost:3000/api/users
 Authorization: Bearer {{authorizationToken}}
 Content-Type: application/json
 
 {
-    "username": "admin",
-    "password": "1234"
-    "display_name": "Juan Perez",
-    "email": "juan.perez@example.com"
+    "user_name": "nuevo_usuario",
+    "password": "segura123",
+    "display_name": "Nuevo Usuario",
+    "email": "nuevo@ejemplo.com",
+    "role": "user"
 }
+
+###
+
+### PATCH - Modificar usuario por username
+PATCH http://localhost:3000/api/users/{{username}}
+Authorization: Bearer {{authorizationToken}}
+Content-Type: application/json
+
+{
+    "display_name": "Nombre Actualizado"
+}
+
+###
+
+### DELETE - Eliminar usuario por username
+DELETE http://localhost:3000/api/users/{{username}}
+Authorization: Bearer {{authorizationToken}}
+
+###
+
+### Logout
+POST http://localhost:3000/api/logout
+Authorization: Bearer {{authorizationToken}}

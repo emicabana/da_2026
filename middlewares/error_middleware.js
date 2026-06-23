@@ -1,3 +1,3 @@
 export default async function errorHandler(err, req, res, next) {
-    res.json({ error: err.message || "Error desconocido" });
+    res.status(err.status || 500).json({ error: err.message || "Error desconocido" });
 }

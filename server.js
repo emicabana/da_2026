@@ -6,9 +6,9 @@ import "./dependencies.js";
 import errorMiddleware from "./middlewares/error_middleware.js";
 import checkAutorizationTokenMiddleware from "./middlewares/check_authorization_token_middleware.js";
 import logMiddleware from "./middlewares/log_middleware..js";
-//import bcrypt from "bcrypt";
+import bcrypt from "bcrypt";
 
-//console.log("Hash de '1234':", bcrypt.hashSync("1234", 10));
+console.log("Hash de '1234':", bcrypt.hashSync("1234", 10));
 
 const app = express();
 
@@ -24,7 +24,7 @@ app.use(errorMiddleware);
 
 try {
     await mongoose.connect(config.dbConnection);
-    console.log("Connectado a MongoDB");
+    console.log("Conectado a MongoDB");
     
     app.listen(config.port, () => {
         console.log(`Server escuchando en http://localhost:${config.port}`);

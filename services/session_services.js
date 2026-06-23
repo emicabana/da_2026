@@ -1,4 +1,4 @@
-import { getDependency } from "../dependecy.js";
+import { getDependency } from "../dependency.js";
 
 export class SessionService {
     constructor() {
@@ -7,5 +7,9 @@ export class SessionService {
 
     async getByToken(token) {
         return await this.sessionRepo.findOne({ authorizationToken: token });
-    }   
+    }
+
+    async deleteByToken(token) {
+        return await this.sessionRepo.removeByToken(token);
+    }
 }

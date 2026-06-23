@@ -1,4 +1,4 @@
-import { getDependency } from "../dependecy.js";
+import { getDependency } from "../dependency.js";
 import bcrypt from "bcrypt";
 
 export class LoginService {
@@ -14,22 +14,20 @@ export class LoginService {
     }
 
     async login(data) {
-         if (!data.user_name)
-            throw new Error("El nombre de usuario es obligatorio");
+        if (!data.user_name)
+            throw Object.assign(new Error("El nombre de usuario es obligatorio"), { status: 400 });
 
         if (!data.password)
-            throw new Error("La contraseña es obligatoria");
+            throw Object.assign(new Error("La contraseña es obligatoria"), { status: 400 });
 
-        const user = await this.userRepo.findOne({
-            user_name: data.user_name
-        });
+        const user = await this.userRepo.findOne({ user_name: data.user_name });
 
         if (!user)
-            throw new Error("El nombre de usuario o la contraseña son incorrectos");
+            throw Object.assign(new Error("El nombre de usuario o la contraseña son incorrectos"), { status: 401 });
 
         const isMatch = await bcrypt.compare(data.password, user.password);
         if (!isMatch)
-            throw new Error("El nombre de usuario o la contraseña son incorrectos");
+            throw Object.assign(new Error("El nombre de usuario o la contraseña son incorrectos"), { status: 401 });
 
         var authorizationToken;
         do {
@@ -40,7 +38,7 @@ export class LoginService {
             username: user.user_name,
             authorizationToken,
             role: user.role,
-            open: new Date().toISOString(),
+            open: new Date().toISOString()
         });
 
         return {

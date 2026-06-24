@@ -1,4 +1,4 @@
-@authorizationToken = fc8a5d40589a0aa10333528834927e1901094e09ea04a02bda3b7ba5149eb707
+@authorizationToken = 102739e42dcbd5a71559d05e264698539cc089a041421a3f9e99dfa40e69410d
 
 ### GET - Listar todas las fotos (público)
 GET http://localhost:3000/api/photos

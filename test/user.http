@@ -8,7 +8,7 @@ Content-Type: application/json
 }
 
 ### ⬆ Copiá el authorizationToken de la respuesta y pegalo abajo
-@authorizationToken = ca1f7cd713ac96f73cf35dc41606b34cb36571d0c1785fb7a38ad83bbbb8ead6
+@authorizationToken = fc8a5d40589a0aa10333528834927e1901094e09ea04a02bda3b7ba5149eb707
 @username = nuevo_usuario
 
 ### GET - Listar todos los usuarios

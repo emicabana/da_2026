@@ -1,0 +1,43 @@
+@authorizationToken = fc8a5d40589a0aa10333528834927e1901094e09ea04a02bda3b7ba5149eb707
+
+### GET - Listar todas las fotos (público)
+GET http://localhost:3000/api/photos
+
+###
+
+### GET - Ver una foto por id
+GET http://localhost:3000/api/photos/{{photoId}}
+
+###
+
+@photoId = 6a3b406bd7b90edf07d29437
+
+### POST - Subir foto (solo admin)
+POST http://localhost:3000/api/photos
+Authorization: Bearer {{authorizationToken}}
+Content-Type: application/json
+
+{
+    "title": "Foto de prueba",
+    "description": "Una foto de egresados",
+    "url": "https://ejemplo.com/foto1.jpg",
+    "type": "photo",
+    "price": 1500
+}
+
+###
+
+### PATCH - Modificar foto (solo admin)
+PATCH http://localhost:3000/api/photos/{{photoId}}
+Authorization: Bearer {{authorizationToken}}
+Content-Type: application/json
+
+{
+    "price": 2000
+}
+
+###
+
+### DELETE - Eliminar foto (solo admin)
+DELETE http://localhost:3000/api/photos/{{photoId}}
+Authorization: Bearer {{authorizationToken}}

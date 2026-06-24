@@ -5,7 +5,7 @@ import { createRouter } from "./api/router.js";
 import "./dependencies.js";
 import errorMiddleware from "./middlewares/error_middleware.js";
 import checkAutorizationTokenMiddleware from "./middlewares/check_authorization_token_middleware.js";
-import logMiddleware from "./middlewares/log_middleware..js";
+import logMiddleware from "./middlewares/log_middleware.js";
 import bcrypt from "bcrypt";
 
 console.log("Hash de '1234':", bcrypt.hashSync("1234", 10));
@@ -29,6 +29,6 @@ try {
     app.listen(config.port, () => {
         console.log(`Server escuchando en http://localhost:${config.port}`);
     });
-}   catch (error) {
+} catch (error) {
     console.error("Error connecting to MongoDB:", error);
 }

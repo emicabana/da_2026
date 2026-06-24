@@ -10,6 +10,6 @@ export class SessionService {
     }
 
     async deleteByToken(token) {
-        return await this.sessionRepo.removeByToken(token);
+        return await this.sessionRepo.findOneAndDelete({ authorizationToken: token });
     }
 }

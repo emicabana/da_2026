@@ -5,34 +5,63 @@ export function configureUserRouter(router) {
     const userService = getDependency("userService");
 
     console.log("Configurando rutas de usuario...");
-    router.get("/users", checkRoleMiddleware("admin"), async (req, res) => {
-        const users = await userService.getAllUsers();
-        res.json(users.map(user => ({
-            id: user.id,
-            user_name: user.user_name,
-            display_name: user.display_name,
-            email: user.email,
-            role: user.role
-        })));
+
+    router.get("/users", checkRoleMiddleware("admin"), async (req, res, next) => {
+        try {
+            const users = await userService.getList();
+            res.json(users.map(user => ({
+                id: user.id,
+                user_name: user.user_name,
+                display_name: user.display_name,
+                email: user.email,
+                role: user.role
+            })));
+        } catch (err) { next(err); }
     });
 
-router.post("/users/:id", checkRoleMiddleware("admin"), async (req, res) => {
-    const user = await getDependency("userService").create(req.body);
-    if (!user) return res.status(404).json({ error: "Usuario ya existe" });
-    res.status(201).json({ id: user.id, user_name: user.user_name, display_name: user.display_name, email: user.email, role: user.role });
-});
+    router.get("/users/:username", checkRoleMiddleware("admin"), async (req, res, next) => {
+        try {
+            const user = await userService.getByUsername(req.params.username);
+            res.json({
+                id: user.id,
+                user_name: user.user_name,
+                display_name: user.display_name,
+                email: user.email,
+                role: user.role
+            });
+        } catch (err) { next(err); }
+    });
 
-router.put("/users/:id", checkRoleMiddleware("admin"), async (req, res) => {
-    const userService = getDependency("userService");
-    const updatedUser = await userService.update(req.params.id, req.body);
-    if (!updatedUser) return res.status(404).json({ error: "Usuario no encontrado" });
-    res.json({ id: updatedUser.id, user_name: updatedUser.user_name, display_name: updatedUser.display_name, email: updatedUser.email, role: updatedUser.role });
-});
+    router.post("/users", checkRoleMiddleware("admin"), async (req, res, next) => {
+        try {
+            const user = await userService.create(req.body);
+            res.status(201).json({
+                id: user.id,
+                user_name: user.user_name,
+                display_name: user.display_name,
+                email: user.email,
+                role: user.role
+            });
+        } catch (err) { next(err); }
+    });
 
-router.delete("/users/:id", checkRoleMiddleware("admin"), async (req, res) => {
-    const userService = getDependency("userService");
-    const deleted = await userService.delete(req.params.id);
-    if (!deleted) return res.status(404).json({ error: "Usuario no encontrado" });
-    res.status(204).send();
-});
-} 
+    router.patch("/users/:username", checkRoleMiddleware("admin"), async (req, res, next) => {
+        try {
+            const updatedUser = await userService.update(req.params.username, req.body);
+            res.json({
+                id: updatedUser.id,
+                user_name: updatedUser.user_name,
+                display_name: updatedUser.display_name,
+                email: updatedUser.email,
+                role: updatedUser.role
+            });
+        } catch (err) { next(err); }
+    });
+
+    router.delete("/users/:username", checkRoleMiddleware("admin"), async (req, res, next) => {
+        try {
+            await userService.delete(req.params.username);
+            res.status(204).send();
+        } catch (err) { next(err); }
+    });
+}

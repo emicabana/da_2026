@@ -7,7 +7,7 @@ export class UserService {
     }
 
     async getList() {
-        return await this.userRepo.findAll();
+        return await this.userRepo.find();
     }
 
     async getByUsername(username) {
@@ -24,26 +24,25 @@ export class UserService {
         if (!user.password)
             throw Object.assign(new Error("La contraseña es obligatoria"), { status: 400 });
 
-        if (user.password === "1234")
-            throw Object.assign(new Error("La contraseña no puede ser '1234'"), { status: 400 });
-
         const existentUser = await this.userRepo.findOne({ user_name: user.user_name });
         if (existentUser)
             throw Object.assign(new Error("El nombre de usuario ya existe"), { status: 409 });
 
         user.password = bcrypt.hashSync(user.password, 10);
 
-        return this.userRepo.create(user);
+        return await this.userRepo.create(user);
     }
 
     async update(username, data) {
         if (data.password) {
-            if (data.password === "1234")
-                throw Object.assign(new Error("La contraseña no puede ser '1234'"), { status: 400 });
             data.password = bcrypt.hashSync(data.password, 10);
         }
 
-        const updated = await this.userRepo.updateByUsername(username, data);
+        const updated = await this.userRepo.findOneAndUpdate(
+            { user_name: username },
+            data,
+            { new: true }
+        );
         if (!updated)
             throw Object.assign(new Error("Usuario no encontrado"), { status: 404 });
 
@@ -51,7 +50,7 @@ export class UserService {
     }
 
     async delete(username) {
-        const deleted = await this.userRepo.removeByUsername(username);
+        const deleted = await this.userRepo.findOneAndDelete({ user_name: username });
         if (!deleted)
             throw Object.assign(new Error("Usuario no encontrado"), { status: 404 });
 

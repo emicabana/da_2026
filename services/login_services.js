@@ -21,7 +21,6 @@ export class LoginService {
             throw Object.assign(new Error("La contraseña es obligatoria"), { status: 400 });
 
         const user = await this.userRepo.findOne({ user_name: data.user_name });
-
         if (!user)
             throw Object.assign(new Error("El nombre de usuario o la contraseña son incorrectos"), { status: 401 });
 
@@ -32,7 +31,7 @@ export class LoginService {
         var authorizationToken;
         do {
             authorizationToken = this.createToken();
-        } while (await this.sessionRepo.findOne({ token: authorizationToken }));
+        } while (await this.sessionRepo.findOne({ authorizationToken }));
 
         const session = await this.sessionRepo.create({
             username: user.user_name,

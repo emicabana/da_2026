@@ -5,4 +5,4 @@ export function createRouter(router) {
     console.log("Creando rutas principales...");
     configureUserRouter(router);
     configureLoginRouter(router);
-} 
+}

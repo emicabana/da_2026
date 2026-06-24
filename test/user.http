@@ -4,12 +4,11 @@ Content-Type: application/json
 
 {
     "user_name": "admin",
-    "password": "admin1234"
+    "password": "1234"
 }
 
-###
-
-@authorizationToken = <reemplazar con el token devuelto por Login>
+### ⬆ Copiá el authorizationToken de la respuesta y pegalo abajo
+@authorizationToken = ca1f7cd713ac96f73cf35dc41606b34cb36571d0c1785fb7a38ad83bbbb8ead6
 @username = nuevo_usuario
 
 ### GET - Listar todos los usuarios
@@ -30,10 +29,10 @@ Authorization: Bearer {{authorizationToken}}
 Content-Type: application/json
 
 {
-    "user_name": "nuevo_usuario",
+    "user_name": "Kevin",
     "password": "segura123",
     "display_name": "Nuevo Usuario",
-    "email": "nuevo@ejemplo.com",
+    "email": "kevin@gmail.com",
     "role": "user"
 }
 

@@ -13,18 +13,48 @@ GET http://localhost:3000/api/photos/{{photoId}}
 @photoId = 6a3b406bd7b90edf07d29437
 
 ### POST - Subir foto (solo admin)
+### Foto 1
 POST http://localhost:3000/api/photos
 Authorization: Bearer {{authorizationToken}}
 Content-Type: application/json
 
 {
-    "title": "Foto de prueba",
-    "description": "Una foto de egresados",
-    "url": "https://ejemplo.com/foto1.jpg",
+    "title": "Egresados 2024 - Grupo 1",
+    "description": "Foto grupal del baile de egresados",
+    "url": "https://images.unsplash.com/photo-1523580494863-6f3031224c94",
     "type": "photo",
     "price": 1500
 }
 
+###
+
+### Foto 2
+POST http://localhost:3000/api/photos
+Authorization: Bearer {{authorizationToken}}
+Content-Type: application/json
+
+{
+    "title": "Egresados 2024 - Pareja 1",
+    "description": "Foto de pareja en el baile",
+    "url": "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92",
+    "type": "photo",
+    "price": 1200
+}
+
+###
+
+### Foto 3
+POST http://localhost:3000/api/photos
+Authorization: Bearer {{authorizationToken}}
+Content-Type: application/json
+
+{
+    "title": "Video - Vals de egresados",
+    "description": "Video del vals principal",
+    "url": "https://www.example.com/video1.mp4",
+    "type": "video",
+    "price": 3000
+}
 ###
 
 ### PATCH - Modificar foto (solo admin)

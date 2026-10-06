@@ -1,0 +1,41 @@
+@authorizationToken = 
+@photoId = 
+@orderId = 
+
+### POST - Crear pedido (usuario logueado)
+POST http://localhost:3000/api/orders
+Authorization: Bearer {{authorizationToken}}
+Content-Type: application/json
+
+{
+    "photos": ["{{photoId}}"]
+}
+
+###
+
+### GET - Ver mis pedidos
+GET http://localhost:3000/api/orders/mine
+Authorization: Bearer {{authorizationToken}}
+
+###
+
+### GET - Ver un pedido por id
+GET http://localhost:3000/api/orders/{{orderId}}
+Authorization: Bearer {{authorizationToken}}
+
+###
+
+### GET - Ver todos los pedidos (solo admin)
+GET http://localhost:3000/api/orders
+Authorization: Bearer {{authorizationToken}}
+
+###
+
+### PATCH - Actualizar estado (solo admin)
+PATCH http://localhost:3000/api/orders/{{orderId}}/status
+Authorization: Bearer {{authorizationToken}}
+Content-Type: application/json
+
+{
+    "status": "paid"
+}

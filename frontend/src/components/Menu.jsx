@@ -1,0 +1,34 @@
+const menuItems = {
+  admin: [{ id: 'users', label: 'Cuentas' }],
+  photographer: [{ id: 'photos', label: 'Mis fotografías' }],
+  customer: [
+    { id: 'catalog', label: 'Explorar fotos' },
+    { id: 'orders', label: 'Mis pedidos' },
+  ],
+};
+
+export default function Menu({ role, activeView, onNavigate }) {
+  if (!role) return null;
+  const selectedView = activeView || menuItems[role]?.[0]?.id;
+
+  return (
+    <nav className="sidebar" aria-label="Navegación principal">
+      <p className="eyebrow sidebar-label">ESPACIO DE TRABAJO</p>
+      <div className="sidebar-items">
+        {(menuItems[role] || []).map((item) => (
+          <button
+            className={`sidebar-link ${selectedView === item.id ? 'is-active' : ''}`}
+            type="button"
+            key={item.id}
+            aria-current={selectedView === item.id ? 'page' : undefined}
+            onClick={() => onNavigate?.(item.id)}
+          >
+            <span className="sidebar-indicator" />
+            {item.label}
+          </button>
+        ))}
+      </div>
+      <p className="sidebar-caption">Fotografía independiente, en un solo lugar.</p>
+    </nav>
+  );
+}

@@ -1,3 +1,9 @@
-export default function Footer() {
-  return <footer className="site-footer"><span>foco. · Galería de fotografía</span><span>Obra original, de sus autores.</span></footer>;
+export default function Footer({ isPublic = false, isAuth = false }) {
+  return (
+    <footer className={`site-footer ${isPublic || isAuth ? 'site-footer-public' : ''}`}>
+      <span>Memories · Galería de fotografía</span>
+      <span>Obra original, de sus autores.</span>
+      {isPublic && <span>© {new Date().getFullYear()} Memories</span>}
+    </footer>
+  );
 }

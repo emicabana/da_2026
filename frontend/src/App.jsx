@@ -4,6 +4,7 @@ import MainLayout from './layouts/MainLayout';
 import { createUser, login, getUsers, logout, updateUser, deleteUser } from './services/api';
 import CustomerDashboard from './components/CustomerDashboard';
 import PhotographerDashboard from './components/PhotographerDashboard';
+import LandingPage from './components/LandingPage';
 
 const roleLabels = {
   admin: 'Administrador',
@@ -23,6 +24,7 @@ export default function App() {
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
   const [session, setSession] = useState(null);
+  const [showLogin, setShowLogin] = useState(false);
   const [customerView, setCustomerView] = useState('catalog');
   const [users, setUsers] = useState([]);
   const [newUser, setNewUser] = useState({ ...emptyUserForm });
@@ -41,6 +43,7 @@ export default function App() {
     try {
       const loggedInSession = await login({ user_name: userName, password });
       setSession(loggedInSession);
+      setShowLogin(false);
       setPassword('');
       setCustomerView('catalog');
       if (loggedInSession.role === 'admin') {
@@ -167,17 +170,37 @@ export default function App() {
       onLogout={handleLogout}
       activeView={customerView}
       onNavigate={setCustomerView}
+      showPublicNavigation={!session && !showLogin}
+      showLogin={!session && showLogin}
+      onShowLogin={() => { setShowLogin(true); setError(''); }}
+      onHome={() => { setShowLogin(false); setError(''); }}
     >
-      {!session && (
-        <section className="login-layout">
+      {!session && !showLogin && <LandingPage onLogin={() => { setShowLogin(true); setError(''); }} />}
+
+      {!session && showLogin && (
+        <section className="login-layout login-page">
           <div className="login-copy">
-            <p className="eyebrow">GALERÍA INDEPENDIENTE</p>
-            <h1>Fotografía para guardar.</h1>
-            <p>Entrá a tu espacio para publicar imágenes o encontrar las que estás buscando.</p>
+            <p className="landing-eyebrow"><span /> FOTOGRAFÍA PARA CADA OCASIÓN</p>
+            <h1>Cada evento<br />tiene su <span>historia.</span></h1>
+            <p className="login-description">
+              Ingresá a Memories para encontrar las fotos de tus celebraciones, shows y eventos,
+              y volver a vivir cada momento.
+            </p>
+            <div className="login-image" role="img" aria-label="Fotografía de un evento en vivo">
+              <div className="login-image-caption">
+                <span>FOTOGRAFÍA · VIDEO · EVENTOS</span>
+                <strong>La esencia de cada momento.</strong>
+              </div>
+            </div>
+            <p className="login-footnote"><span aria-hidden="true">✦</span> Cada historia merece ser recordada.</p>
           </div>
           <form className="surface login-form" onSubmit={handleLogin}>
-            <p className="eyebrow">TU CUENTA</p>
-            <h2>Iniciar sesión</h2>
+            <div className="login-form-heading">
+              <span className="login-form-mark" aria-hidden="true">M</span>
+              <p className="landing-eyebrow">BIENVENIDO A MEMORIES</p>
+              <h2>Iniciar sesión</h2>
+              <p>Ingresá tus datos para continuar.</p>
+            </div>
             <label>Usuario
               <input className="field" type="text" value={userName} onChange={(event) => setUserName(event.target.value)} placeholder="Tu usuario" autoComplete="username" required />
             </label>
@@ -188,6 +211,7 @@ export default function App() {
               {loading ? 'Ingresando…' : 'Ingresar'}
             </button>
             {error && <p className="notice notice-error" role="alert">{error}</p>}
+            <p className="login-secure-note"><span aria-hidden="true">●</span> Acceso seguro a tu espacio</p>
           </form>
         </section>
       )}

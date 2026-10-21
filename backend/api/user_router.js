@@ -20,6 +20,28 @@ export function configureUserRouter(router) {
         } catch (err) { next(err); }
     });
 
+    router.get("/users/me", checkRoleMiddleware("photographer"), async (req, res, next) => {
+        try {
+            const user = await userService.getByUsername(req.session.username);
+            res.json({
+                user_name: user.user_name,
+                display_name: user.display_name,
+                email: user.email,
+            });
+        } catch (err) { next(err); }
+    });
+
+    router.patch("/users/me", checkRoleMiddleware("photographer"), async (req, res, next) => {
+        try {
+            const user = await userService.updateOwnProfile(req.session.username, req.body);
+            res.json({
+                user_name: user.user_name,
+                display_name: user.display_name,
+                email: user.email,
+            });
+        } catch (err) { next(err); }
+    });
+
     router.get("/users/:username", checkRoleMiddleware("admin"), async (req, res, next) => {
         try {
             const user = await userService.getByUsername(req.params.username);

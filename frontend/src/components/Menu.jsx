@@ -1,6 +1,15 @@
 const menuItems = {
   admin: [{ id: 'users', label: 'Cuentas' }],
-  photographer: [{ id: 'photos', label: 'Mis fotografías' }],
+  photographer: [
+    { id: 'profile', label: 'Mi perfil', icon: '◉' },
+    { id: 'sales', label: 'Ventas', icon: '$' },
+    { id: 'discounts', label: 'Descuentos y paquetes', icon: '%' },
+    { id: 'coupons', label: 'Cupones', icon: '⌑' },
+    { id: 'collaborators', label: 'Colaboradores', icon: '♧' },
+    { id: 'billing', label: 'Facturación', icon: '▤' },
+    { id: 'studio', label: 'Studio', icon: '✦' },
+    { id: 'photos', label: 'Mis fotografías', icon: '▧' },
+  ],
   customer: [
     { id: 'catalog', label: 'Explorar fotos' },
     { id: 'orders', label: 'Mis pedidos' },
@@ -23,7 +32,9 @@ export default function Menu({ role, activeView, onNavigate }) {
             aria-current={selectedView === item.id ? 'page' : undefined}
             onClick={() => onNavigate?.(item.id)}
           >
-            <span className="sidebar-indicator" />
+            {item.icon
+              ? <span className="sidebar-icon" aria-hidden="true">{item.icon}</span>
+              : <span className="sidebar-indicator" />}
             {item.label}
           </button>
         ))}

@@ -1,5 +1,6 @@
 import express from "express";
 import mongoose from "mongoose";
+import { uploadsDirectory } from "./services/photo_storage.js";
 import config from "./config.js";
 import "./dependencies.js";
 import { createRouter } from "./api/router.js";
@@ -11,6 +12,7 @@ import logMiddleware from "./middlewares/log_middleware.js";
 const app = express();
 
 app.use(express.json());
+app.use("/uploads", express.static(uploadsDirectory, { fallthrough: false, maxAge: "1d" }));
 app.use(checkAutorizationTokenMiddleware);
 app.use(logMiddleware);
 

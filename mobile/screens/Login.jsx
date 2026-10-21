@@ -1,3 +1,4 @@
+import { Button } from "react-native";
 import Screen from "../components/screen";
 import TextField from "../components/TextField";
 
@@ -13,5 +14,9 @@ export default function Login() {
                 placeholder="Ingrese su contraseña"
                 secureTextEntry={true}
             />
-    </Screen>;
+            <Button
+                title="Iniciar sesión"
+                onPress={() => {}}
+            />
+        </Screen>;
 }

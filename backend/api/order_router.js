@@ -40,7 +40,7 @@ export function configureOrderRouter(router) {
     // Usuario logueado — crear pedido
     router.post("/orders", checkRoleMiddleware("customer"), async (req, res, next) => {
         try {
-            const order = await orderService.create(req.session.username, req.body.photos);
+            const order = await orderService.create(req.session.username, req.body.photos, req.body.coupon_code);
             res.status(201).json(order);
         } catch (err) { next(err); }
     });

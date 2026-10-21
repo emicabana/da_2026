@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
+import './ProjectTheme.css';
 import MainLayout from './layouts/MainLayout';
 import { createUser, login, getUsers, logout, updateUser, deleteUser } from './services/api';
 import CustomerDashboard from './components/CustomerDashboard';
 import PhotographerDashboard from './components/PhotographerDashboard';
 import LandingPage from './components/LandingPage';
+import PhotographerTools from './components/PhotographerTools';
 
 const roleLabels = {
   admin: 'Administrador',
@@ -21,11 +23,19 @@ const emptyUserForm = {
 };
 
 export default function App() {
+  const [theme, setTheme] = useState(() => {
+    try {
+      return window.localStorage.getItem('memories-theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  });
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
   const [session, setSession] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
   const [customerView, setCustomerView] = useState('catalog');
+  const [photographerView, setPhotographerView] = useState('profile');
   const [users, setUsers] = useState([]);
   const [newUser, setNewUser] = useState({ ...emptyUserForm });
   const [editingUsername, setEditingUsername] = useState('');
@@ -34,6 +44,15 @@ export default function App() {
   const [loading, setLoading] = useState(false);
 
   const token = session?.authorizationToken;
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+    try {
+      window.localStorage.setItem('memories-theme', theme);
+    } catch {
+      // The theme still applies for this session if storage is unavailable.
+    }
+  }, [theme]);
 
   async function handleLogin(event) {
     event.preventDefault();
@@ -46,6 +65,7 @@ export default function App() {
       setShowLogin(false);
       setPassword('');
       setCustomerView('catalog');
+      setPhotographerView('profile');
       if (loggedInSession.role === 'admin') {
         setUsers(await getUsers(loggedInSession.authorizationToken));
       } else {
@@ -155,6 +175,7 @@ export default function App() {
       setUserName('');
       setPassword('');
       setCustomerView('catalog');
+      setPhotographerView('profile');
       setUsers([]);
       setNewUser({ ...emptyUserForm });
       setEditingUsername('');
@@ -166,10 +187,12 @@ export default function App() {
 
   return (
     <MainLayout
+      theme={theme}
+      onToggleTheme={() => setTheme((current) => current === 'dark' ? 'light' : 'dark')}
       session={session}
       onLogout={handleLogout}
-      activeView={customerView}
-      onNavigate={setCustomerView}
+      activeView={session?.role === 'photographer' ? photographerView : customerView}
+      onNavigate={session?.role === 'photographer' ? setPhotographerView : setCustomerView}
       showPublicNavigation={!session && !showLogin}
       showLogin={!session && showLogin}
       onShowLogin={() => { setShowLogin(true); setError(''); }}
@@ -259,7 +282,9 @@ export default function App() {
         </section>
       )}
 
-      {session?.role === 'photographer' && <PhotographerDashboard token={session.authorizationToken} username={session.username} />}
+      {session?.role === 'photographer' && (photographerView === 'profile' || photographerView === 'photos'
+        ? <PhotographerDashboard token={session.authorizationToken} username={session.username} />
+        : <PhotographerTools token={session.authorizationToken} username={session.username} view={photographerView} onBack={() => setPhotographerView('profile')} />)}
       {session?.role === 'customer' && <CustomerDashboard token={session.authorizationToken} username={session.username} view={customerView} onViewChange={setCustomerView} />}
     </MainLayout>
   );

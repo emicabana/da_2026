@@ -25,7 +25,8 @@
   "dependencies": {
     "bcrypt": "^6.0.0",
     "express": "^5.2.1",
-    "mongoose": "^9.6.3"
+    "mongoose": "^9.6.3",
+    "multer": "^2.4.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

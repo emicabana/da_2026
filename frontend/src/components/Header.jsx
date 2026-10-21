@@ -13,7 +13,7 @@ const publicLinks = [
   { href: '#contacto', label: 'Contacto' },
 ];
 
-export default function Header({ session, onLogout, showPublicNavigation, showLogin, onShowLogin, onHome }) {
+export default function Header({ theme, onToggleTheme, session, onLogout, showPublicNavigation, showLogin, onShowLogin, onHome }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
   function closeMenu() {
@@ -52,18 +52,34 @@ export default function Header({ session, onLogout, showPublicNavigation, showLo
           </button>
         </>
       )}
-      {session && (
-        <div className="account-controls">
-          <div className="account-identity">
-            <span className="account-name">@{session.username}</span>
-            <span className="account-role">{roleNames[session.role] || 'Cuenta'}</span>
+      <div className="topbar-actions">
+        {session && (
+          <div className="account-controls">
+            <div className="account-identity">
+              <span className="account-name">@{session.username}</span>
+              <span className="account-role">{roleNames[session.role] || 'Cuenta'}</span>
+            </div>
+            {session.role === 'photographer' && (
+              <span className="photographer-account-avatar" aria-hidden="true">
+                {(session.username || 'F').slice(0, 1).toUpperCase()}
+              </span>
+            )}
+            <button className="button button-topbar" type="button" onClick={onLogout}>Cerrar sesión</button>
           </div>
-          <button className="button button-topbar" type="button" onClick={onLogout}>Cerrar sesión</button>
-        </div>
-      )}
-      {!session && !showPublicNavigation && (
-        <button className="button button-topbar" type="button" onClick={onHome}>Volver al inicio</button>
-      )}
+        )}
+        {!session && !showPublicNavigation && (
+          <button className="button button-topbar" type="button" onClick={onHome}>Volver al inicio</button>
+        )}
+        <button
+          className="theme-toggle"
+          type="button"
+          onClick={onToggleTheme}
+          aria-label={`Activar modo ${theme === 'dark' ? 'claro' : 'nocturno'}`}
+          aria-pressed={theme === 'dark'}
+        >
+          <span aria-hidden="true">{theme === 'dark' ? '☀' : '☾'}</span>
+        </button>
+      </div>
     </header>
   );
 }

@@ -4,6 +4,8 @@ import Menu from '../components/Menu';
 
 export default function MainLayout({
   children,
+  theme,
+  onToggleTheme,
   session,
   onLogout,
   activeView,
@@ -14,8 +16,10 @@ export default function MainLayout({
   onHome,
 }) {
   return (
-    <div className={`app-shell ${session ? 'app-shell-authenticated' : ''} ${showPublicNavigation ? 'app-shell-public' : ''}`}>
+    <div className={`app-shell ${session ? 'app-shell-authenticated' : ''} ${showPublicNavigation ? 'app-shell-public' : ''}`} data-theme={theme}>
       <Header
+        theme={theme}
+        onToggleTheme={onToggleTheme}
         session={session}
         onLogout={onLogout}
         showPublicNavigation={showPublicNavigation}
@@ -26,7 +30,7 @@ export default function MainLayout({
       <div className={`app-frame ${session ? '' : 'app-frame-login'} ${showPublicNavigation ? 'app-frame-public' : ''} ${showLogin ? 'app-frame-auth' : ''}`}>
         <Menu
           role={session?.role}
-          activeView={session?.role === 'customer' ? activeView : undefined}
+          activeView={session?.role === 'customer' || session?.role === 'photographer' ? activeView : undefined}
           onNavigate={onNavigate}
         />
         <main className={`main-content ${showPublicNavigation ? 'main-content-public' : ''} ${showLogin ? 'main-content-auth' : ''}`}>{children}</main>

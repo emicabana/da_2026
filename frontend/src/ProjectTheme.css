@@ -824,6 +824,19 @@
   box-shadow: 0 16px 34px rgba(116, 24, 157, 0.34);
 }
 
+.app-shell[data-theme="light"] .landing-actions .landing-button-outline {
+  border-color: transparent;
+  background: linear-gradient(110deg, var(--palette-purple), var(--palette-violet));
+  box-shadow: 0 12px 28px rgba(116, 24, 157, 0.26);
+  color: #fff;
+}
+
+.app-shell[data-theme="light"] .landing-actions .landing-button-outline:hover {
+  border-color: transparent;
+  background: linear-gradient(110deg, var(--palette-magenta), var(--palette-violet));
+  box-shadow: 0 16px 34px rgba(116, 24, 157, 0.34);
+}
+
 .landing-carousel {
   border-radius: 28px;
 }
@@ -1438,6 +1451,313 @@
   .app-shell *::before,
   .app-shell *::after {
     scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.landing-hero {
+  grid-template-columns: minmax(0, 0.92fr) minmax(400px, 1.08fr);
+  gap: clamp(38px, 6vw, 82px);
+}
+
+.landing-hero h1 {
+  font-family: var(--sans);
+  font-size: clamp(48px, 6vw, 76px);
+  font-weight: 800;
+  letter-spacing: -3.8px;
+  line-height: 1.02;
+}
+
+.landing-mosaic {
+  --mosaic-gap: clamp(10px, 1.35vw, 16px);
+  display: grid;
+  min-width: 0;
+  min-height: 520px;
+  aspect-ratio: 1.02;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 0.84fr 1.16fr 0.86fr;
+  gap: var(--mosaic-gap);
+  overflow: visible;
+  transition: grid-template-columns 560ms cubic-bezier(0.2, 0.8, 0.2, 1), grid-template-rows 560ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.landing-mosaic[data-active="0"],
+.landing-mosaic[data-active="2"] {
+  grid-template-columns: 1.12fr 0.88fr;
+}
+
+.landing-mosaic[data-active="1"],
+.landing-mosaic[data-active="3"] {
+  grid-template-columns: 0.88fr 1.12fr;
+}
+
+.landing-mosaic[data-active="0"],
+.landing-mosaic[data-active="1"] {
+  grid-template-rows: 1.08fr 1.12fr 0.66fr;
+}
+
+.landing-mosaic[data-active="2"],
+.landing-mosaic[data-active="3"] {
+  grid-template-rows: 0.66fr 1.12fr 1.08fr;
+}
+
+.landing-mosaic-tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid rgba(186, 131, 255, 0.25);
+  border-radius: clamp(20px, 2.2vw, 30px);
+  background: linear-gradient(145deg, #837ee0, #a51caf);
+  box-shadow: 0 22px 55px rgba(5, 2, 22, 0.27);
+  transform: scale(0.985);
+  transition: border-color 380ms ease, box-shadow 450ms ease, transform 560ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.landing-mosaic-tile-0 {
+  grid-area: 1 / 1 / 2 / 2;
+}
+
+.landing-mosaic-tile-1 {
+  grid-area: 1 / 2 / 3 / 3;
+  background: linear-gradient(155deg, #a61ca9, #210947);
+}
+
+.landing-mosaic-tile-2 {
+  grid-area: 2 / 1 / 4 / 2;
+  background: linear-gradient(155deg, #514174, #1c0a3e);
+}
+
+.landing-mosaic-tile-3 {
+  grid-area: 3 / 2 / 4 / 3;
+  background: linear-gradient(145deg, #e8c6d8, #8998df);
+}
+
+.landing-mosaic-tile img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter 500ms ease, transform 650ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.landing-mosaic-tile:not(.is-focused) img {
+  filter: saturate(0.88) brightness(0.86);
+  transform: scale(1.035);
+}
+
+.landing-mosaic-tile.is-focused {
+  z-index: 1;
+  border-color: rgba(233, 200, 255, 0.8);
+  box-shadow: 0 32px 80px rgba(5, 2, 22, 0.42), 0 0 34px rgba(165, 28, 175, 0.28);
+  transform: scale(1.025);
+}
+
+.landing-mosaic-tile.is-focused img {
+  filter: saturate(1.08) brightness(1);
+  transform: scale(1.09);
+}
+
+.landing-actions .landing-button {
+  min-height: 58px;
+  border-radius: 999px;
+  padding-inline: 28px;
+  font-size: 15px;
+}
+
+.auth-form {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.auth-form .auth-name-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auth-form .auth-name-fields label {
+  min-width: 0;
+}
+
+.auth-role-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.auth-role-options button {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  padding: 13px 12px;
+  background: rgba(16, 19, 38, 0.76);
+  color: #f5f3fa;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+}
+
+.auth-role-options button:hover {
+  transform: translateY(-1px);
+}
+
+.auth-role-options button.is-selected {
+  border-color: #b779f2;
+  background: rgba(142, 78, 205, 0.18);
+  box-shadow: 0 0 0 2px rgba(168, 118, 232, 0.1);
+}
+
+.auth-role-options strong {
+  font-size: 13px;
+}
+
+.auth-role-options span,
+.auth-password-hint {
+  color: #9294a7;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.auth-form .auth-switch {
+  color: #a5a4b4;
+  font-size: 12px;
+  text-align: center;
+}
+
+.auth-switch button {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #c89bff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.auth-switch button:hover {
+  color: #e0c5ff;
+  text-decoration: underline;
+}
+
+.auth-form .auth-password-hint {
+  margin-top: -12px;
+}
+
+.auth-form .auth-file-input {
+  min-height: 48px;
+  padding: 9px;
+}
+
+.app-shell[data-theme="light"] .auth-role-options button {
+  border-color: rgba(116, 24, 157, 0.16);
+  background: rgba(255, 255, 255, 0.74);
+  color: #24113c;
+}
+
+.app-shell[data-theme="light"] .auth-role-options button.is-selected {
+  border-color: #9b3bb4;
+  background: rgba(163, 33, 182, 0.09);
+}
+
+.app-shell[data-theme="light"] .auth-role-options span,
+.app-shell[data-theme="light"] .auth-password-hint,
+.app-shell[data-theme="light"] .auth-form .auth-switch {
+  color: #695b79;
+}
+
+.app-shell[data-theme="light"] .auth-switch button {
+  color: #762290;
+}
+
+@media (max-width: 960px) {
+  .landing-hero {
+    grid-template-columns: minmax(0, 1fr) minmax(330px, 0.95fr);
+  }
+
+  .landing-mosaic {
+    min-height: 440px;
+  }
+}
+
+@media (max-width: 820px) {
+  .landing-hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 36px;
+    padding-block: 54px 62px;
+  }
+
+  .landing-hero-copy {
+    max-width: 620px;
+  }
+
+  .landing-hero h1 {
+    font-size: clamp(48px, 10vw, 68px);
+  }
+
+  .landing-mosaic {
+    width: min(100%, 600px);
+    min-height: 0;
+    aspect-ratio: 1.05;
+    justify-self: center;
+  }
+
+  .auth-page {
+    gap: 34px;
+  }
+}
+
+@media (max-width: 560px) {
+  .landing-hero {
+    width: min(100% - 36px, 480px);
+    padding-block: 42px 48px;
+  }
+
+  .landing-hero h1 {
+    font-size: clamp(43px, 12vw, 58px);
+    letter-spacing: -2.5px;
+  }
+
+  .landing-lead {
+    font-size: 14px;
+  }
+
+  .landing-mosaic {
+    --mosaic-gap: 9px;
+    aspect-ratio: 0.98;
+  }
+
+  .landing-mosaic-tile {
+    border-radius: 19px;
+  }
+
+  .landing-actions {
+    gap: 10px;
+  }
+
+  .landing-actions .landing-button {
+    min-height: 50px;
+    padding-inline: 19px;
+    font-size: 13px;
+  }
+
+  .auth-form .auth-name-fields,
+  .auth-role-options {
+    gap: 8px;
+  }
+
+  .auth-role-options button {
+    padding: 11px 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-mosaic,
+  .landing-mosaic-tile,
+  .landing-mosaic-tile img,
+  .auth-role-options button {
     transition-duration: 0.01ms !important;
   }
 }

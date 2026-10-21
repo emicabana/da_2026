@@ -15,13 +15,16 @@ export class LoginService {
     }
 
     async login(data) {
-        if (!data.user_name)
+        const identity = typeof data?.user_name === "string" ? data.user_name.trim() : "";
+        if (!identity)
             throw Object.assign(new Error("El nombre de usuario es obligatorio"), { status: 400 });
 
         if (!data.password)
             throw Object.assign(new Error("La contraseña es obligatoria"), { status: 400 });
 
-        const user = await this.userRepo.findOne({ user_name: data.user_name });
+        const user = identity.includes("@")
+            ? await this.userRepo.findOne({ email: identity.toLowerCase() })
+            : await this.userRepo.findOne({ user_name: identity });
         if (!user)
             throw Object.assign(new Error("El nombre de usuario o la contraseña son incorrectos"), { status: 401 });
 

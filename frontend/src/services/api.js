@@ -27,6 +27,13 @@ export function login({ user_name, password }) {
   });
 }
 
+export function registerAccount(account) {
+  return request('/register', {
+    method: 'POST',
+    body: JSON.stringify(account),
+  });
+}
+
 export function getUsers(token) {
   return request('/users', {
     method: 'GET',

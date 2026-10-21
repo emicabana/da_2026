@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import './App.css';
 import './ProjectTheme.css';
 import MainLayout from './layouts/MainLayout';
-import { createUser, login, getUsers, logout, updateUser, deleteUser } from './services/api';
+import { createUser, login, registerAccount, getUsers, logout, updateUser, deleteUser } from './services/api';
 import CustomerDashboard from './components/CustomerDashboard';
 import PhotographerDashboard from './components/PhotographerDashboard';
 import LandingPage from './components/LandingPage';
+import AuthPage from './components/AuthPage';
 import PhotographerTools from './components/PhotographerTools';
 
 const roleLabels = {
@@ -61,11 +62,7 @@ export default function App() {
 
     try {
       const loggedInSession = await login({ user_name: userName, password });
-      setSession(loggedInSession);
-      setShowLogin(false);
-      setPassword('');
-      setCustomerView('catalog');
-      setPhotographerView('profile');
+      enterSession(loggedInSession);
       if (loggedInSession.role === 'admin') {
         setUsers(await getUsers(loggedInSession.authorizationToken));
       } else {
@@ -76,6 +73,28 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleRegister(account) {
+    setLoading(true);
+    setError('');
+    try {
+      return await registerAccount(account);
+    } catch (err) {
+      setError(err.message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function enterSession(authSession) {
+    setSession(authSession);
+    setShowLogin(false);
+    setPassword('');
+    setCustomerView('catalog');
+    setPhotographerView('profile');
+    setUsers([]);
   }
 
   async function handleLoadUsers() {
@@ -201,42 +220,18 @@ export default function App() {
       {!session && !showLogin && <LandingPage onLogin={() => { setShowLogin(true); setError(''); }} />}
 
       {!session && showLogin && (
-        <section className="login-layout login-page">
-          <div className="login-copy">
-            <p className="landing-eyebrow"><span /> FOTOGRAFÍA PARA CADA OCASIÓN</p>
-            <h1>Cada evento<br />tiene su <span>historia.</span></h1>
-            <p className="login-description">
-              Ingresá a Memories para encontrar las fotos de tus celebraciones, shows y eventos,
-              y volver a vivir cada momento.
-            </p>
-            <div className="login-image" role="img" aria-label="Fotografía de un evento en vivo">
-              <div className="login-image-caption">
-                <span>FOTOGRAFÍA · VIDEO · EVENTOS</span>
-                <strong>La esencia de cada momento.</strong>
-              </div>
-            </div>
-            <p className="login-footnote"><span aria-hidden="true">✦</span> Cada historia merece ser recordada.</p>
-          </div>
-          <form className="surface login-form" onSubmit={handleLogin}>
-            <div className="login-form-heading">
-              <span className="login-form-mark" aria-hidden="true">M</span>
-              <p className="landing-eyebrow">BIENVENIDO A MEMORIES</p>
-              <h2>Iniciar sesión</h2>
-              <p>Ingresá tus datos para continuar.</p>
-            </div>
-            <label>Usuario
-              <input className="field" type="text" value={userName} onChange={(event) => setUserName(event.target.value)} placeholder="Tu usuario" autoComplete="username" required />
-            </label>
-            <label>Contraseña
-              <input className="field" type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Tu contraseña" autoComplete="current-password" required />
-            </label>
-            <button className="button button-primary button-wide" type="submit" disabled={loading}>
-              {loading ? 'Ingresando…' : 'Ingresar'}
-            </button>
-            {error && <p className="notice notice-error" role="alert">{error}</p>}
-            <p className="login-secure-note"><span aria-hidden="true">●</span> Acceso seguro a tu espacio</p>
-          </form>
-        </section>
+        <AuthPage
+          userName={userName}
+          password={password}
+          onUsernameChange={setUserName}
+          onPasswordChange={setPassword}
+          onLogin={handleLogin}
+          onRegister={handleRegister}
+          onRegistrationComplete={enterSession}
+          onClearError={() => setError('')}
+          loading={loading}
+          error={error}
+        />
       )}
 
       {session?.role === 'admin' && (

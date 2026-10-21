@@ -42,17 +42,6 @@ const formatPrice = new Intl.NumberFormat('es-AR', {
   maximumFractionDigits: 0,
 });
 
-function handleCarouselPointerMove(event) {
-  if (event.pointerType !== 'mouse') return;
-  const bounds = event.currentTarget.getBoundingClientRect();
-  const x = (event.clientX - bounds.left) / bounds.width - 0.5;
-  const y = (event.clientY - bounds.top) / bounds.height - 0.5;
-  event.currentTarget.style.setProperty('--pointer-shift-x', `${x * -14}px`);
-  event.currentTarget.style.setProperty('--pointer-shift-y', `${y * -14}px`);
-  event.currentTarget.style.setProperty('--spotlight-x', `${(x + 0.5) * 100}%`);
-  event.currentTarget.style.setProperty('--spotlight-y', `${(y + 0.5) * 100}%`);
-}
-
 function handleCardPointerMove(event) {
   if (event.pointerType !== 'mouse') return;
   const bounds = event.currentTarget.getBoundingClientRect();
@@ -87,7 +76,7 @@ function resetPointerEffects(event) {
 
 export default function LandingPage({ onLogin }) {
   const landingRef = useRef(null);
-  const [activeSlide, setActiveSlide] = useState(0);
+  const [activeTile, setActiveTile] = useState(null);
   const [photos, setPhotos] = useState([]);
   const [loadingPhotos, setLoadingPhotos] = useState(true);
   const [photoError, setPhotoError] = useState('');
@@ -117,26 +106,13 @@ export default function LandingPage({ onLogin }) {
       : null;
 
     root.querySelectorAll('[data-reveal]').forEach((element) => observer?.observe(element));
-    root.querySelectorAll('[data-reveal]').forEach((element) => observer.observe(element));
     window.addEventListener('scroll', revealVisibleElements, { passive: true });
     revealVisibleElements();
     return () => {
       observer?.disconnect();
-      observer.disconnect();
       window.removeEventListener('scroll', revealVisibleElements);
-      window.removeEventListener('resize', revealVisibleElements);
       root.classList.remove('landing-reveal-ready');
     };
-  }, []);
-
-  useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return undefined;
-
-    const intervalId = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % heroSlides.length);
-    }, 5000);
-
-    return () => window.clearInterval(intervalId);
   }, []);
 
   useEffect(() => {
@@ -162,57 +138,38 @@ export default function LandingPage({ onLogin }) {
     <div className="landing-page" ref={landingRef}>
       <section className="landing-hero" id="inicio" aria-labelledby="landing-title">
         <div className="landing-hero-copy" data-reveal="left">
-          <p className="landing-eyebrow"><span /> FOTOGRAFÍA Y VIDEO PARA EVENTOS</p>
-          <h1 id="landing-title">Cada evento<br /><span>tiene su historia.</span></h1>
+          <p className="landing-eyebrow"><span /> FOTOS Y VIDEOS DE EVENTOS</p>
+          <h1 id="landing-title">Cada<br />momento,<br /><span>revelado.</span></h1>
           <p className="landing-lead">
-            Desde celebraciones y encuentros sociales hasta shows y eventos corporativos:
-            capturamos esos momentos que vale la pena volver a vivir.
+            Encontrá tus fotos y videos del casamiento, del egreso o del recital en los álbumes
+            que publican los fotógrafos del evento.
           </p>
           <div className="landing-actions">
-            <a className="landing-button landing-button-primary" href="#eventos" onPointerMove={handleMagneticPointerMove} onPointerLeave={resetPointerEffects}>
-              Explorar el portfolio <span aria-hidden="true">→</span>
-            </a>
+            <button className="landing-button landing-button-primary" type="button" onClick={onLogin} onPointerMove={handleMagneticPointerMove} onPointerLeave={resetPointerEffects}>
+              Buscar mi evento
+            </button>
             <button className="landing-button landing-button-outline" type="button" onClick={onLogin} onPointerMove={handleMagneticPointerMove} onPointerLeave={resetPointerEffects}>
-              Iniciar sesión
+              Soy fotógrafo
             </button>
           </div>
           <p className="landing-note">Historias reales. Momentos que perduran.</p>
         </div>
 
-        <div
-          className="landing-carousel"
-          aria-roledescription="carrusel"
-          aria-label="Fotografía y video de eventos"
-          data-reveal="right"
-          onPointerMove={handleCarouselPointerMove}
-          onPointerLeave={resetPointerEffects}
-        >
+        <div className="landing-mosaic" data-active={activeTile ?? ''} role="group" aria-label="Fotografías de eventos" data-reveal="right">
           {heroSlides.map((slide, index) => (
-            <img
-              className={`landing-slide ${activeSlide === index ? 'is-active' : ''}`}
-              src={slide.src}
-              alt={activeSlide === index ? slide.alt : ''}
-              aria-hidden={activeSlide !== index}
+            <div
+              className={`landing-mosaic-tile landing-mosaic-tile-${index} ${activeTile === index ? 'is-focused' : ''}`}
               key={slide.src}
-            />
+              onPointerEnter={(event) => {
+                if (event.pointerType === 'mouse') setActiveTile(index);
+              }}
+              onPointerLeave={(event) => {
+                if (event.pointerType === 'mouse') setActiveTile(null);
+              }}
+            >
+              <img src={slide.src} alt={slide.alt} />
+            </div>
           ))}
-          <div className="landing-carousel-shade" />
-          <div className="landing-carousel-caption">
-            <span>FOTOGRAFÍA · VIDEO · EVENTOS</span>
-            <strong>La esencia de cada momento.</strong>
-          </div>
-          <div className="landing-carousel-dots" aria-label="Elegir imagen">
-            {heroSlides.map((slide, index) => (
-              <button
-                className={activeSlide === index ? 'is-active' : ''}
-                type="button"
-                aria-label={`Mostrar imagen ${index + 1}`}
-                aria-pressed={activeSlide === index}
-                key={slide.src}
-                onClick={() => setActiveSlide(index)}
-              />
-            ))}
-          </div>
         </div>
       </section>
 
@@ -238,12 +195,12 @@ export default function LandingPage({ onLogin }) {
       <section className="landing-events landing-section" id="eventos" aria-labelledby="events-title">
         <div className="landing-section-heading landing-section-heading-row" data-reveal="rise">
           <div>
-            <p className="landing-eyebrow">TRABAJOS DESTACADOS</p>
+            <p className="landing-eyebrow">ÁLBUMES RECIENTES</p>
             <h2 id="events-title">Cada evento, una nueva historia.</h2>
             <p>Una selección de proyectos de fotografía y video en vivo.</p>
           </div>
           <button className="landing-text-link" type="button" onClick={onLogin}>
-            Ver la galería <span aria-hidden="true">→</span>
+            Ver álbumes <span aria-hidden="true">→</span>
           </button>
         </div>
         <div className="landing-event-grid">

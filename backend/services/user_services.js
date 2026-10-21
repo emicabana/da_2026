@@ -86,6 +86,59 @@ export class UserService {
         });
     }
 
+    async register(data) {
+        if (!data || typeof data !== "object" || Array.isArray(data))
+            throw Object.assign(new Error("Faltan los datos de la cuenta"), { status: 400 });
+
+        const firstName = typeof data.first_name === "string" ? data.first_name.trim() : "";
+        const lastName = typeof data.last_name === "string" ? data.last_name.trim() : "";
+        const email = typeof data.email === "string" ? data.email.trim().toLowerCase() : "";
+        if (!firstName || firstName.length > 40)
+            throw Object.assign(new Error("El nombre es obligatorio y no puede superar los 40 caracteres"), { status: 400 });
+        if (!lastName || lastName.length > 40)
+            throw Object.assign(new Error("El apellido es obligatorio y no puede superar los 40 caracteres"), { status: 400 });
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+            throw Object.assign(new Error("Ingresá un correo electrónico válido"), { status: 400 });
+        if (typeof data.password !== "string" || !PASSWORD_PATTERN.test(data.password))
+            throw Object.assign(new Error("La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número"), { status: 400 });
+        if (!["customer", "photographer"].includes(data.role))
+            throw Object.assign(new Error("Seleccioná si querés registrarte como usuario o fotógrafo"), { status: 400 });
+
+        if (await this.userRepo.findOne({ email }))
+            throw Object.assign(new Error("Ese correo electrónico ya está asociado a otra cuenta"), { status: 409 });
+
+        const usernameBase = `${firstName}.${lastName}`
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^A-Za-z0-9._]/g, ".")
+            .replace(/\.{2,}/g, ".")
+            .replace(/^\.+|\.+$/g, "")
+            .slice(0, 30) || "memories";
+        let userName = usernameBase;
+        let suffix = 1;
+        while (await this.userRepo.findOne({ user_name: userName })) {
+            const suffixText = String(suffix);
+            userName = `${usernameBase.slice(0, 30 - suffixText.length)}${suffixText}`;
+            suffix += 1;
+        }
+
+        try {
+            return await this.create({
+                user_name: userName,
+                password: data.password,
+                display_name: `${firstName} ${lastName}`,
+                email,
+                role: data.role,
+            });
+        } catch (error) {
+            if (error.code === 11000 && error.keyPattern?.email)
+                throw Object.assign(new Error("Ese correo electrónico ya está asociado a otra cuenta"), { status: 409 });
+            if (error.code === 11000 && error.keyPattern?.user_name)
+                throw Object.assign(new Error("No se pudo generar un usuario único. Intentá registrarte nuevamente"), { status: 409 });
+            throw error;
+        }
+    }
+
     async update(username, data) {
         const updates = { ...data };
         if (updates.user_name !== undefined && !USERNAME_PATTERN.test(updates.user_name))

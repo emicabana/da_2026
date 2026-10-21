@@ -4,8 +4,20 @@ import { normalizeRole } from "../roles.js";
 
 export function configureUserRouter(router) {
     const userService = getDependency("userService");
+    const loginService = getDependency("loginService");
 
     console.log("Configurando rutas de usuario...");
+
+    router.post("/register", async (req, res, next) => {
+        try {
+            const user = await userService.register(req.body);
+            const session = await loginService.login({
+                user_name: user.user_name,
+                password: req.body.password,
+            });
+            res.status(201).json(session);
+        } catch (err) { next(err); }
+    });
 
     router.get("/users", checkRoleMiddleware("admin"), async (req, res, next) => {
         try {

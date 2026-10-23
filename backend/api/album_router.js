@@ -6,6 +6,7 @@ import { removeStoredPhoto } from "../services/photo_storage.js";
 export function configureAlbumRouter(router) {
     const albumService = getDependency("albumService");
     const photoService = getDependency("photoService");
+    const adminOrPhotographer = checkRoleMiddleware(["admin", "photographer"]);
 
     router.get("/albums/catalog", async (req, res, next) => {
         try {
@@ -15,17 +16,21 @@ export function configureAlbumRouter(router) {
         }
     });
 
-    router.get("/albums/mine", checkRoleMiddleware(["admin", "photographer"]), async (req, res, next) => {
+    router.get("/albums/mine", adminOrPhotographer, async (req, res, next) => {
         try {
-            res.json(await albumService.getList(req.session.username));
+            res.json(await albumService.getList(req.session.username, req.session.role === "admin"));
         } catch (err) {
             next(err);
         }
     });
 
-    router.delete("/albums/:id", checkRoleMiddleware("photographer"), async (req, res, next) => {
+    router.delete("/albums/:id", adminOrPhotographer, async (req, res, next) => {
         try {
-            const { album, photos } = await albumService.delete(req.params.id, req.session.username);
+            const { album, photos } = await albumService.delete(
+                req.params.id,
+                req.session.username,
+                req.session.role === "admin"
+            );
             for (const photo of photos) {
                 try {
                     await removeStoredPhoto(photo.url);
@@ -44,7 +49,7 @@ export function configureAlbumRouter(router) {
         }
     });
 
-    router.post("/albums", checkRoleMiddleware(["admin", "photographer"]), uploadPhoto.single("cover"), async (req, res, next) => {
+    router.post("/albums", adminOrPhotographer, uploadPhoto.single("cover"), async (req, res, next) => {
         try {
             if (!req.file)
                 throw Object.assign(new Error("Seleccioná una portada para el álbum."), { status: 400 });
@@ -66,20 +71,26 @@ export function configureAlbumRouter(router) {
         }
     });
 
-    router.patch("/albums/:id/offers", checkRoleMiddleware("photographer"), async (req, res, next) => {
+    router.patch("/albums/:id/offers", adminOrPhotographer, async (req, res, next) => {
         try {
-            res.json(await albumService.updateOffers(req.params.id, req.session.username, req.body));
+            res.json(await albumService.updateOffers(
+                req.params.id,
+                req.session.username,
+                req.body,
+                req.session.role === "admin"
+            ));
         } catch (err) {
             next(err);
         }
     });
 
-    router.post("/albums/:id/quantity-discounts", checkRoleMiddleware("photographer"), async (req, res, next) => {
+    router.post("/albums/:id/quantity-discounts", adminOrPhotographer, async (req, res, next) => {
         try {
             const discount = await albumService.createQuantityDiscount(
                 req.params.id,
                 req.session.username,
-                req.body
+                req.body,
+                req.session.role === "admin"
             );
             res.status(201).json(discount);
         } catch (err) {
@@ -87,25 +98,27 @@ export function configureAlbumRouter(router) {
         }
     });
 
-    router.patch("/albums/:id/quantity-discounts/:discountId", checkRoleMiddleware("photographer"), async (req, res, next) => {
+    router.patch("/albums/:id/quantity-discounts/:discountId", adminOrPhotographer, async (req, res, next) => {
         try {
             res.json(await albumService.updateQuantityDiscount(
                 req.params.id,
                 req.params.discountId,
                 req.session.username,
-                req.body
+                req.body,
+                req.session.role === "admin"
             ));
         } catch (err) {
             next(err);
         }
     });
 
-    router.delete("/albums/:id/quantity-discounts/:discountId", checkRoleMiddleware("photographer"), async (req, res, next) => {
+    router.delete("/albums/:id/quantity-discounts/:discountId", adminOrPhotographer, async (req, res, next) => {
         try {
             await albumService.deleteQuantityDiscount(
                 req.params.id,
                 req.params.discountId,
-                req.session.username
+                req.session.username,
+                req.session.role === "admin"
             );
             res.status(204).send();
         } catch (err) {
@@ -113,9 +126,13 @@ export function configureAlbumRouter(router) {
         }
     });
 
-    router.get("/albums/:id/photos", checkRoleMiddleware(["admin", "photographer"]), async (req, res, next) => {
+    router.get("/albums/:id/photos", adminOrPhotographer, async (req, res, next) => {
         try {
-            const album = await albumService.getById(req.params.id, req.session.username);
+            const album = await albumService.getById(
+                req.params.id,
+                req.session.username,
+                req.session.role === "admin"
+            );
             res.json(await photoService.getByAlbum(album._id));
         } catch (err) {
             next(err);

@@ -27,7 +27,14 @@ export class AlbumService {
         }));
     }
 
-    async getList(username) {
+    async getList(username, isAdmin = false) {
+        if (isAdmin) {
+            const allAlbums = await this.albumRepo.find({}).sort({ date: -1, createdAt: -1 });
+            return allAlbums.map((album) => ({
+                ...(typeof album.toObject === "function" ? album.toObject() : album),
+                shared_permission: "full",
+            }));
+        }
         const collaborations = await this.collaboratorRepo.find({
             collaborator_username: username,
             status: { $in: ["accepted", null] },
@@ -59,13 +66,13 @@ export class AlbumService {
         });
     }
 
-    async getById(id, username) {
+    async getById(id, username, isAdmin = false) {
         if (!mongoose.isValidObjectId(id))
             throw invalid("El identificador del álbum no es válido.");
         const album = await this.albumRepo.findById(id);
         if (!album)
             throw Object.assign(new Error("Álbum no encontrado"), { status: 404 });
-        if (album.owner_username !== username) {
+        if (!isAdmin && album.owner_username !== username) {
             const collaboration = await this.collaboratorRepo.findOne({
                 owner_username: album.owner_username,
                 collaborator_username: username,
@@ -81,28 +88,27 @@ export class AlbumService {
         return album;
     }
 
-    async delete(id, username) {
-        const album = await this.getById(id, username);
-        if (album.owner_username !== username)
+    async delete(id, username, isAdmin = false) {
+        const album = await this.getById(id, username, isAdmin);
+        if (!isAdmin && album.owner_username !== username)
             throw Object.assign(new Error("Solo el propietario puede eliminar este álbum."), { status: 403 });
 
         const photos = await this.photoRepo.find({ album_id: album._id });
         await this.photoRepo.deleteMany({ album_id: album._id });
         await this.couponRepo.deleteMany({ album_id: album._id });
         await this.collaboratorRepo.deleteMany({ album_id: album._id });
-        const deletedAlbum = await this.albumRepo.findOneAndDelete({
-            _id: album._id,
-            owner_username: username,
-        });
+        const deletedAlbum = await this.albumRepo.findOneAndDelete(
+            isAdmin ? { _id: album._id } : { _id: album._id, owner_username: username }
+        );
         if (!deletedAlbum)
             throw Object.assign(new Error("Álbum no encontrado."), { status: 404 });
 
         return { album: deletedAlbum, photos };
     }
 
-    async updateOffers(id, username, data) {
-        const album = await this.getById(id, username);
-        if (album.owner_username !== username)
+    async updateOffers(id, username, data, isAdmin = false) {
+        const album = await this.getById(id, username, isAdmin);
+        if (!isAdmin && album.owner_username !== username)
             throw Object.assign(new Error("Solo el propietario puede editar las ofertas del álbum."), { status: 403 });
         const fields = [
             "photo_discount_percent", "photo_discount_min_quantity", "photo_package_quantity", "photo_package_price",
@@ -129,15 +135,15 @@ export class AlbumService {
                 throw invalid("El precio de un paquete activo debe ser mayor a cero.");
         }
         return this.albumRepo.findOneAndUpdate(
-            { _id: id, owner_username: username },
+            isAdmin ? { _id: id } : { _id: id, owner_username: username },
             { $set: updates },
             { new: true, runValidators: true }
         );
     }
 
-    async createQuantityDiscount(id, username, data) {
-        const album = await this.getById(id, username);
-        if (album.owner_username !== username)
+    async createQuantityDiscount(id, username, data, isAdmin = false) {
+        const album = await this.getById(id, username, isAdmin);
+        if (!isAdmin && album.owner_username !== username)
             throw Object.assign(new Error("Solo el propietario puede crear descuentos para este álbum."), { status: 403 });
 
         const name = typeof data.name === "string" ? data.name.trim() : "";
@@ -175,7 +181,7 @@ export class AlbumService {
             tiers,
         };
         const updated = await this.albumRepo.findOneAndUpdate(
-            { _id: id, owner_username: username },
+            isAdmin ? { _id: id } : { _id: id, owner_username: username },
             { $push: { quantity_discounts: discount } },
             { new: true, runValidators: true }
         );
@@ -184,9 +190,9 @@ export class AlbumService {
         return updated.quantity_discounts[updated.quantity_discounts.length - 1];
     }
 
-    async updateQuantityDiscount(id, discountId, username, data) {
-        const album = await this.getById(id, username);
-        if (album.owner_username !== username)
+    async updateQuantityDiscount(id, discountId, username, data, isAdmin = false) {
+        const album = await this.getById(id, username, isAdmin);
+        if (!isAdmin && album.owner_username !== username)
             throw Object.assign(new Error("Solo el propietario puede editar descuentos para este álbum."), { status: 403 });
         if (!mongoose.isValidObjectId(discountId))
             throw invalid("El descuento seleccionado no es válido.");
@@ -199,9 +205,9 @@ export class AlbumService {
         return discount;
     }
 
-    async deleteQuantityDiscount(id, discountId, username) {
-        const album = await this.getById(id, username);
-        if (album.owner_username !== username)
+    async deleteQuantityDiscount(id, discountId, username, isAdmin = false) {
+        const album = await this.getById(id, username, isAdmin);
+        if (!isAdmin && album.owner_username !== username)
             throw Object.assign(new Error("Solo el propietario puede eliminar descuentos para este álbum."), { status: 403 });
         if (!mongoose.isValidObjectId(discountId))
             throw invalid("El descuento seleccionado no es válido.");

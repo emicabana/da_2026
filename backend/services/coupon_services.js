@@ -11,11 +11,11 @@ export class CouponService {
         this.albumRepo = getDependency("albumRepo");
     }
 
-    getList(username) {
-        return this.couponRepo.find({ owner_username: username }).sort({ createdAt: -1 });
+    getList(username, isAdmin = false) {
+        return this.couponRepo.find(isAdmin ? {} : { owner_username: username }).sort({ createdAt: -1 });
     }
 
-    async create(username, data) {
+    async create(username, data, isAdmin = false) {
         const code = typeof data.code === "string" ? data.code.trim().toUpperCase() : "";
         if (!/^[A-Z0-9_-]{3,30}$/.test(code))
             throw invalid("El código debe tener entre 3 y 30 caracteres: letras, números, guion o guion bajo.");
@@ -37,7 +37,7 @@ export class CouponService {
         if (data.album_id) {
             if (!mongoose.isValidObjectId(data.album_id))
                 throw invalid("El álbum seleccionado no es válido.");
-            const album = await this.albumRepo.findOne({ _id: data.album_id, owner_username: username });
+            const album = await this.albumRepo.findOne(isAdmin ? { _id: data.album_id } : { _id: data.album_id, owner_username: username });
             if (!album)
                 throw Object.assign(new Error("El álbum no existe o no pertenece a tu cuenta."), { status: 404 });
             albumId = album._id;
@@ -76,7 +76,7 @@ export class CouponService {
         }
     }
 
-    async update(username, id, data) {
+    async update(username, id, data, isAdmin = false) {
         if (!mongoose.isValidObjectId(id))
             throw invalid("El cupón seleccionado no es válido.");
         const updates = {};
@@ -90,7 +90,7 @@ export class CouponService {
             }
         }
         const updated = await this.couponRepo.findOneAndUpdate(
-            { _id: id, owner_username: username },
+            isAdmin ? { _id: id } : { _id: id, owner_username: username },
             updates,
             { new: true, runValidators: true }
         );
@@ -99,10 +99,10 @@ export class CouponService {
         return updated;
     }
 
-    async delete(username, id) {
+    async delete(username, id, isAdmin = false) {
         if (!mongoose.isValidObjectId(id))
             throw invalid("El cupón seleccionado no es válido.");
-        const deleted = await this.couponRepo.findOneAndDelete({ _id: id, owner_username: username });
+        const deleted = await this.couponRepo.findOneAndDelete(isAdmin ? { _id: id } : { _id: id, owner_username: username });
         if (!deleted)
             throw Object.assign(new Error("Cupón no encontrado."), { status: 404 });
     }

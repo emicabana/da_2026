@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { createAlbum } from '../services/api';
+import { BrandCameraLogo } from './Header';
 
 const emptyAccount = {
   first_name: '',
@@ -25,8 +26,9 @@ export default function AuthPage({
   onClearError,
   loading,
   error,
+  initialMode = 'login',
 }) {
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState(initialMode);
   const [role, setRole] = useState('customer');
   const [account, setAccount] = useState({ ...emptyAccount });
   const [photographerSession, setPhotographerSession] = useState(null);
@@ -92,7 +94,7 @@ export default function AuthPage({
         <p className="landing-eyebrow"><span /> FOTOGRAFÍA PARA CADA OCASIÓN</p>
         <h1>Cada evento<br />tiene su <span>historia.</span></h1>
         <p className="login-description">
-          Ingresá a Memories para encontrar las fotos de tus celebraciones, shows y eventos,
+          Ingresá a Revela para encontrar las fotos de tus celebraciones, shows y eventos,
           y volver a vivir cada momento.
         </p>
         <div className="login-image" role="img" aria-label="Fotografía de un evento en vivo">
@@ -107,8 +109,8 @@ export default function AuthPage({
       {mode === 'login' && (
         <form className="surface login-form auth-form" onSubmit={onLogin}>
           <div className="login-form-heading">
-            <span className="login-form-mark" aria-hidden="true">M</span>
-            <p className="landing-eyebrow">BIENVENIDO A MEMORIES</p>
+            <span className="login-form-mark" aria-hidden="true"><BrandCameraLogo /></span>
+            <p className="landing-eyebrow">BIENVENIDO A REVELA</p>
             <h2>Iniciar sesión</h2>
             <p>Ingresá tus datos para continuar.</p>
           </div>
@@ -118,6 +120,7 @@ export default function AuthPage({
           <label>Contraseña
             <input className="field" type="password" value={password} onChange={(event) => onPasswordChange(event.target.value)} placeholder="Tu contraseña" autoComplete="current-password" required />
           </label>
+          {loading && <div className="loader-status" role="status" aria-live="polite"><div className="loader" /><span>Iniciando sesión…</span></div>}
           <button className="button button-primary button-wide" type="submit" disabled={loading}>
             {loading ? 'Ingresando…' : 'Ingresar'}
           </button>
@@ -130,10 +133,10 @@ export default function AuthPage({
       {mode === 'register' && (
         <form className="surface login-form auth-form" onSubmit={handleRegister}>
           <div className="login-form-heading">
-            <span className="login-form-mark" aria-hidden="true">M</span>
+            <span className="login-form-mark" aria-hidden="true"><BrandCameraLogo /></span>
             <p className="landing-eyebrow">UN ESPACIO PARA TUS HISTORIAS</p>
             <h2>Crear cuenta</h2>
-            <p>Elegí cómo querés usar Memories.</p>
+            <p>Elegí cómo querés usar Revela.</p>
           </div>
           <div className="auth-role-options" role="group" aria-label="Tipo de cuenta">
             <button className={role === 'customer' ? 'is-selected' : ''} type="button" aria-pressed={role === 'customer'} onClick={() => setRole('customer')}>
@@ -158,6 +161,7 @@ export default function AuthPage({
             <input className="field" type="password" value={account.password} onChange={(event) => setAccount({ ...account, password: event.target.value })} placeholder="Mínimo 8 caracteres" autoComplete="new-password" minLength={8} pattern="(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{8,}" title="Usá al menos 8 caracteres, con una mayúscula, una minúscula y un número." required />
           </label>
           <small className="auth-password-hint">Al menos 8 caracteres, una mayúscula, una minúscula y un número.</small>
+          {loading && <div className="loader-status" role="status" aria-live="polite"><div className="loader" /><span>Iniciando sesión…</span></div>}
           <button className="button button-primary button-wide" type="submit" disabled={loading}>
             {loading ? 'Creando cuenta…' : role === 'photographer' ? 'Continuar' : 'Crear cuenta'}
           </button>
@@ -169,7 +173,7 @@ export default function AuthPage({
       {mode === 'album' && (
         <form className="surface login-form auth-form auth-album-form" onSubmit={handleCreateAlbum}>
           <div className="login-form-heading">
-            <span className="login-form-mark" aria-hidden="true">M</span>
+            <span className="login-form-mark" aria-hidden="true"><BrandCameraLogo /></span>
             <p className="landing-eyebrow">TU PERFIL DE FOTÓGRAFO</p>
             <h2>Creá tu primer álbum</h2>
             <p>Sumá un evento para completar tu perfil y empezar a compartir tu trabajo.</p>
@@ -198,6 +202,7 @@ export default function AuthPage({
           <label>Portada del álbum
             <input className="field auth-file-input" type="file" accept="image/*" onChange={(event) => setCover(event.target.files?.[0] || null)} required />
           </label>
+          {albumLoading && <div className="loader-status" role="status" aria-live="polite"><div className="loader" /><span>Creando álbum…</span></div>}
           <button className="button button-primary button-wide" type="submit" disabled={albumLoading}>
             {albumLoading ? 'Creando álbum…' : 'Crear álbum y perfil'}
           </button>

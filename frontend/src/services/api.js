@@ -1,6 +1,18 @@
 const API_BASE = '/api';
+const LOADER_DURATION_MS = 5000;
+
+function waitForLoader(endpoint, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  if (method === 'GET' || endpoint === '/logout') {
+    return Promise.resolve();
+  }
+  return new Promise((resolve) => {
+    setTimeout(resolve, LOADER_DURATION_MS);
+  });
+}
 
 async function request(endpoint, options = {}) {
+  const loaderTimer = waitForLoader(endpoint, options);
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers: {
@@ -17,6 +29,7 @@ async function request(endpoint, options = {}) {
     throw new Error(message);
   }
 
+  await loaderTimer;
   return data;
 }
 
@@ -279,6 +292,24 @@ export function getMyOrders(token) {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  });
+}
+
+export function getAllOrders(token) {
+  return request('/orders', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+}
+
+export function updateOrderStatus(token, orderId, status) {
+  return request(`/orders/${encodeURIComponent(orderId)}/status`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
   });
 }
 

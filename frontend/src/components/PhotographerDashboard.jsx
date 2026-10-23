@@ -37,7 +37,7 @@ function displayName(username) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-export default function PhotographerDashboard({ token, username }) {
+export default function PhotographerDashboard({ token, username, isAdmin = false, sectionView = 'profile', onSelectSection }) {
   const [albums, setAlbums] = useState([]);
   const [photos, setPhotos] = useState([]);
   const [profile, setProfile] = useState({ display_name: username, email: '' });
@@ -54,6 +54,7 @@ export default function PhotographerDashboard({ token, username }) {
   const [settingsDialog, setSettingsDialog] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [loadingAlbumPhotos, setLoadingAlbumPhotos] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState('');
   const [deletingAlbum, setDeletingAlbum] = useState(false);
@@ -71,7 +72,7 @@ export default function PhotographerDashboard({ token, username }) {
         if (active) {
           const accessibleAlbumIds = new Set(userAlbums.map((album) => String(album._id || album.id)));
           setPhotos(allPhotos.filter((photo) =>
-            photo.owner_username === username || accessibleAlbumIds.has(String(photo.album_id || ''))
+            isAdmin || photo.owner_username === username || accessibleAlbumIds.has(String(photo.album_id || ''))
           ));
           setAlbums(userAlbums);
           setProfile(userProfile);
@@ -85,7 +86,7 @@ export default function PhotographerDashboard({ token, username }) {
       });
 
     return () => { active = false; };
-  }, [token, username, refreshKey]);
+  }, [token, username, isAdmin, refreshKey]);
 
   useEffect(() => {
     function closeSettingsOnEscape(event) {
@@ -108,9 +109,13 @@ export default function PhotographerDashboard({ token, username }) {
   useEffect(() => {
     if (!selectedAlbumId || view !== 'album') return undefined;
     let active = true;
+
     getAlbumPhotos(token, selectedAlbumId)
       .then((items) => {
-        if (active) setAlbumPhotos(items);
+        if (active) {
+          setAlbumPhotos(items);
+          setLoadingAlbumPhotos(false);
+        }
       })
       .catch((requestError) => {
         if (active) setError(requestError.message);
@@ -328,7 +333,7 @@ export default function PhotographerDashboard({ token, username }) {
   }
 
   async function handleDeleteAlbum() {
-    if (!selectedAlbum || selectedAlbum.owner_username !== username) return;
+    if (!selectedAlbum || (!isAdmin && selectedAlbum.owner_username !== username)) return;
     const photoCount = albumPhotos.length;
     const photoLabel = photoCount === 1 ? '1 foto' : `${photoCount} fotos`;
     if (!window.confirm(`¿Eliminar el álbum “${selectedAlbum.name}” y sus ${photoLabel}? Esta acción no se puede deshacer.`)) return;
@@ -431,6 +436,7 @@ export default function PhotographerDashboard({ token, username }) {
           {error && <p className="notice notice-error" role="alert">{error}</p>}
           <div className="form-actions">
             <button className="button button-primary" type="submit" disabled={saving}>{saving ? 'Creando…' : 'Crear álbum'}</button>
+            {saving && <div className="loader-status" role="status" aria-live="polite"><div className="loader" /><span>Creando álbum…</span></div>}
           </div>
         </form>
       </section>
@@ -492,9 +498,59 @@ export default function PhotographerDashboard({ token, username }) {
             <button className="button button-primary" type="submit" disabled={saving}>
               {saving ? 'Guardando…' : editingId ? 'Guardar cambios' : 'Publicar foto'}
             </button>
+            {saving && <div className="loader-status" role="status" aria-live="polite"><div className="loader" /><span>{editingId ? 'Guardando cambios…' : 'Subiendo fotografía…'}</span></div>}
             {editingId && <button className="button button-quiet" type="button" onClick={cancelEditing}>Cancelar edición</button>}
           </div>
         </form>
+      </section>
+    );
+  }
+
+  if (sectionView === 'photos' && view === 'profile') {
+    const albumsById = new Map(albums.map((albumItem) => [String(albumItem._id || albumItem.id), albumItem]));
+    return (
+      <section className="photographer-dashboard photographer-profile" aria-labelledby="photographer-photos-title">
+        <div className="photographer-gallery-heading">
+          <span aria-hidden="true">▧</span>
+          <h2 id="photographer-photos-title">Mis fotografías ({photos.length})</h2>
+          <button className="button button-quiet button-small" type="button" onClick={() => { setLoading(true); setError(''); setRefreshKey((key) => key + 1); }} disabled={loading}>Actualizar</button>
+        </div>
+        {error && <p className="notice notice-error photographer-feedback" role="alert">{error}</p>}
+        {message && <p className="notice notice-success photographer-feedback" role="status">{message}</p>}
+        {loading ? (
+          <div className="photographer-empty-state" role="status" aria-live="polite"><div className="loader" /><p>Cargando tus fotografías…</p></div>
+        ) : photos.length === 0 ? (
+          <div className="photographer-empty-state">
+            <span className="photographer-empty-icon" aria-hidden="true">▱</span>
+            <h2>Aún no tenés fotografías publicadas</h2>
+            <p>Seleccioná o creá un álbum desde tu perfil para empezar a publicar tus fotos.</p>
+            <button className="button button-primary" type="button" onClick={() => onSelectSection?.('profile')}>Ir a mi perfil</button>
+          </div>
+        ) : (
+          <div className="photographer-gallery">
+            {photos.map((photo) => {
+              const id = photo._id || photo.id;
+              const photoAlbum = photo.album_id ? albumsById.get(String(photo.album_id)) : null;
+              const canManage = isAdmin || photo.owner_username === username || photoAlbum?.owner_username === username || photoAlbum?.shared_permission === 'full';
+              return (
+                <article className="photographer-gallery-item" key={id}>
+                  <img src={photo.url} alt={photo.title} loading="lazy" />
+                  <div className="photographer-photo-overlay">
+                    <strong>{photo.title}</strong>
+                    <span>{formatPrice.format(photo.price)}{photoAlbum ? ` · ${photoAlbum.name}` : ''}</span>
+                    {photo.description && <p>{photo.description}</p>}
+                    {canManage && (
+                      <div className="photo-card-actions">
+                        <button className="button button-quiet button-small" type="button" onClick={() => startEditing(photo)}>Editar</button>
+                        <button className="button button-danger button-small" type="button" onClick={() => handleDelete(photo)} disabled={deletingId === id}>{deletingId === id ? 'Eliminando…' : 'Eliminar'}</button>
+                      </div>
+                    )}
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
       </section>
     );
   }
@@ -517,7 +573,7 @@ export default function PhotographerDashboard({ token, username }) {
             <button className="button button-primary photographer-upload-button" type="button" onClick={startUploading}>
               <span aria-hidden="true">＋</span> Agregar fotos
             </button>
-            {selectedAlbum.owner_username === username && (
+            {(isAdmin || selectedAlbum.owner_username === username) && (
               <button className="button button-danger" type="button" onClick={handleDeleteAlbum} disabled={deletingAlbum}>
                 {deletingAlbum ? 'Eliminando…' : 'Eliminar álbum'}
               </button>
@@ -531,7 +587,10 @@ export default function PhotographerDashboard({ token, username }) {
           <h2>Fotos del álbum</h2>
           <span>{albumPhotos.length} {albumPhotos.length === 1 ? 'foto' : 'fotos'}</span>
         </div>
-        {albumPhotos.length === 0 ? (
+        {(deletingAlbum || deletingId) && <div className="loader-status photographer-feedback" role="status" aria-live="polite"><div className="loader" /><span>{deletingAlbum ? 'Eliminando álbum…' : 'Eliminando fotografía…'}</span></div>}
+        {loadingAlbumPhotos ? (
+          <div className="photographer-empty-state" role="status" aria-live="polite"><div className="loader" /><p>Cargando fotos del álbum…</p></div>
+        ) : albumPhotos.length === 0 ? (
           <div className="photographer-empty-state">
             <span className="photographer-empty-icon" aria-hidden="true">▱</span>
             <h2>Este álbum todavía no tiene fotos</h2>
@@ -549,7 +608,7 @@ export default function PhotographerDashboard({ token, username }) {
                     <strong>{photo.title}</strong>
                     <span>{formatPrice.format(photo.price)}</span>
                     {photo.description && <p>{photo.description}</p>}
-                    {(photo.owner_username === username || album.owner_username === username || album.shared_permission === 'full') && <div className="photo-card-actions">
+                    {(isAdmin || photo.owner_username === username || selectedAlbum.owner_username === username || selectedAlbum.shared_permission === 'full') && <div className="photo-card-actions">
                       <button className="button button-quiet button-small" type="button" onClick={() => startEditing(photo)}>Editar</button>
                       <button className="button button-danger button-small" type="button" onClick={() => handleDelete(photo)} disabled={deletingId === id}>{deletingId === id ? 'Eliminando…' : 'Eliminar'}</button>
                     </div>}
@@ -630,7 +689,7 @@ export default function PhotographerDashboard({ token, username }) {
       </div>
 
       {loading ? (
-        <div className="photographer-empty-state"><p>Cargando tu perfil…</p></div>
+        <div className="photographer-empty-state" role="status" aria-live="polite"><div className="loader" /><p>Cargando tu perfil…</p></div>
       ) : error ? (
         <div className="photographer-empty-state">
           <h2>No pudimos mostrar tus álbumes</h2>
@@ -657,6 +716,8 @@ export default function PhotographerDashboard({ token, username }) {
                   type="button"
                   onClick={() => {
                     setSelectedAlbumId(id);
+                    setAlbumPhotos([]);
+                    setLoadingAlbumPhotos(true);
                     setAlbumPhotos([]);
                     setError('');
                     setMessage('');
@@ -756,6 +817,7 @@ export default function PhotographerDashboard({ token, username }) {
                 </label>
                 <p className="photographer-setting-note">El usuario @{username} no se puede cambiar desde esta pantalla.</p>
                 {error && <p className="notice notice-error" role="alert">{error}</p>}
+                {saving && <div className="loader-status" role="status" aria-live="polite"><div className="loader" /><span>Guardando perfil…</span></div>}
                 <div className="form-actions">
                   <button className="button button-primary" type="submit" disabled={saving}>
                     {saving ? 'Guardando…' : 'Guardar cambios'}

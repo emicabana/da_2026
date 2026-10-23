@@ -1,5 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
 import { getPhotos } from '../services/api';
+import { BrandCameraLogo } from './Header';
+
+function triggerCameraFlash(targetElement) {
+  let x = '50vw';
+  let y = '50vh';
+  if (targetElement && typeof targetElement.getBoundingClientRect === 'function') {
+    const rect = targetElement.getBoundingClientRect();
+    x = `${Math.round(rect.left + rect.width / 2)}px`;
+    y = `${Math.round(rect.top + rect.height / 2)}px`;
+  }
+  window.dispatchEvent(new CustomEvent('memories:camera-flash', { detail: { x, y } }));
+}
 
 const heroSlides = [
   { src: '/landing/hero-2.jpg', alt: 'Aftermovie Session Pro x Q’Lokura' },
@@ -30,17 +42,72 @@ const featuredEvents = [
 ];
 
 const featuredServices = [
-  { title: 'Celebraciones', description: 'Cumpleaños, fiestas y encuentros importantes con quienes más querés.' },
-  { title: 'Shows en vivo', description: 'La música, el escenario y la energía compartida desde todos los ángulos.' },
-  { title: 'Eventos corporativos', description: 'Encuentros de equipo, lanzamientos y momentos que conectan personas.' },
-  { title: 'Retratos y backstage', description: 'Las personas y los instantes espontáneos que suceden fuera de escena.' },
+  {
+    title: 'Celebraciones',
+    tag: 'SOCIALES · BODAS · EGRESOS',
+    previewImage: '/landing/hero-4.jpg',
+    previewCaption: 'Casamientos, 15 años, graduaciones y fiestas',
+    description: 'Cumpleaños, fiestas y encuentros importantes con quienes más querés.',
+    fullInfo: 'Reviví cada abrazo, brindis y baile con galerías organizadas por evento. Los fotógrafos suben el álbum completo para que cada invitado encuentre sus fotos favoritas en segundos y las descargue en su calidad original.',
+    highlights: [
+      'Cobertura de bodas, fiestas de 15, egresos y aniversarios',
+      'Búsqueda simple por álbum y fecha del evento',
+      'Descuentos automáticos por cantidad o paquetes de fotos',
+      'Descarga inmediata en alta resolución al confirmar tu pedido',
+    ],
+  },
+  {
+    title: 'Shows en vivo',
+    tag: 'RECITALES · FESTIVALES · ESCENARIO',
+    previewImage: '/landing/event-1.jpg',
+    previewCaption: 'Recitales, bandas en vivo y festivales',
+    description: 'La música, el escenario y la energía compartida desde todos los ángulos.',
+    fullInfo: 'Capturamos la potencia de cada show tanto sobre el escenario como entre el público. Encontrá las postales del recital al que asististe o el registro visual completo de tu banda y producción en vivo.',
+    highlights: [
+      'Fotografía de alta velocidad bajo luces de escenario',
+      'Tomas del público, pogo y ambiente del recital',
+      'Aftermovies y clips de video en alta definición',
+      'Catálogo directo de los fotógrafos oficiales de cada fecha',
+    ],
+  },
+  {
+    title: 'Eventos corporativos',
+    tag: 'CONFERENCIAS · MARCAS · EQUIPOS',
+    previewImage: '/landing/event-2.jpg',
+    previewCaption: 'Lanzamientos, congresos y encuentros de equipo',
+    description: 'Encuentros de equipo, lanzamientos y momentos que conectan personas.',
+    fullInfo: 'Documentación profesional para jornadas empresariales, presentaciones de producto, premiaciones y networking. Ideal para que asistentes, speakers y equipos accedan al material prensa y recuerdo del encuentro.',
+    highlights: [
+      'Cobertura de charlas, paneles, stands y entregas de premios',
+      'Galerías centralizadas de fácil acceso para asistentes',
+      'Material listo para redes profesionales y comunicación interna',
+      'Opciones de compra por paquete completo o selección individual',
+    ],
+  },
+  {
+    title: 'Retratos y backstage',
+    tag: 'DETRÁS DE ESCENA · AUTOR · RETRATO',
+    previewImage: '/landing/event-3.jpg',
+    previewCaption: 'Camarines, ensayos y retratos espontáneos',
+    description: 'Las personas y los instantes espontáneos que suceden fuera de escena.',
+    fullInfo: 'Más allá del momento principal, cada evento guarda historias íntimas en la previa, los camarines y los preparativos. Una mirada documental y cercana a los protagonistas antes y después de salir a escena.',
+    highlights: [
+      'Registro documental de ensayos, pruebas de sonido y previa',
+      'Retratos naturales y espontáneos con estética editorial',
+      'Trabajo colaborativo entre múltiples fotógrafos del staff',
+      'Obra original protegida con entrega directa de su autor',
+    ],
+  },
 ];
 
-const formatPrice = new Intl.NumberFormat('es-AR', {
-  style: 'currency',
-  currency: 'ARS',
-  maximumFractionDigits: 0,
-});
+const fallbackFilmFrames = [
+  { id: 'film-1', url: '/landing/event-1.jpg', title: 'Indios x Session Pro', code: '01A' },
+  { id: 'film-2', url: '/landing/hero-2.jpg', title: 'Session Pro x Q’Lokura', code: '02A' },
+  { id: 'film-3', url: '/landing/event-2.jpg', title: 'Escenario en vivo', code: '03A' },
+  { id: 'film-4', url: '/landing/hero-3.jpg', title: 'Chile y Jag', code: '04A' },
+  { id: 'film-5', url: '/landing/event-3.jpg', title: 'Detrás de escena', code: '05A' },
+  { id: 'film-6', url: '/landing/hero-5.jpg', title: 'Aftermovie Jag Cub', code: '06A' },
+];
 
 function handleCardPointerMove(event) {
   if (event.pointerType !== 'mouse') return;
@@ -74,12 +141,11 @@ function resetPointerEffects(event) {
   element.style.removeProperty('--spotlight-y');
 }
 
-export default function LandingPage({ onLogin }) {
+export default function LandingPage({ onLogin, onRegister }) {
   const landingRef = useRef(null);
   const [activeTile, setActiveTile] = useState(null);
+  const [expandedFeature, setExpandedFeature] = useState(null);
   const [photos, setPhotos] = useState([]);
-  const [loadingPhotos, setLoadingPhotos] = useState(true);
-  const [photoError, setPhotoError] = useState('');
 
   useEffect(() => {
     const root = landingRef.current;
@@ -120,19 +186,27 @@ export default function LandingPage({ onLogin }) {
 
     getPhotos()
       .then((catalog) => {
-        if (active) setPhotos(catalog.slice(0, 4));
+        if (active) setPhotos(catalog.slice(0, 6));
       })
-      .catch((error) => {
-        if (active) setPhotoError(error.message);
-      })
-      .finally(() => {
-        if (active) setLoadingPhotos(false);
+      .catch(() => {
+        // Fallback film frames are shown automatically when the API is unavailable.
       });
 
     return () => {
       active = false;
     };
   }, []);
+
+  const mappedCatalogFrames = photos.map((photo, index) => ({
+    id: String(photo._id || photo.id || `catalog-${index}`),
+    url: photo.url,
+    title: photo.title || 'Evento en vivo',
+    code: `0${index + 1}A`,
+  }));
+  const baseFilmFrames = [...mappedCatalogFrames, ...fallbackFilmFrames]
+    .slice(0, 6)
+    .map((frame, index) => ({ ...frame, code: `0${index + 1}A` }));
+  const filmStripFrames = [...baseFilmFrames, ...baseFilmFrames];
 
   return (
     <div className="landing-page" ref={landingRef}>
@@ -180,14 +254,77 @@ export default function LandingPage({ onLogin }) {
             <h2 id="features-title">Un recuerdo para cada ocasión.</h2>
             <p>Una mirada atenta a la energía, las personas y los detalles de cada evento.</p>
           </div>
-          <div className="landing-feature-grid">
-            {featuredServices.map((service, index) => (
-              <article className="landing-feature" data-reveal="rise" style={{ '--reveal-delay': `${index * 90}ms` }} key={service.title}>
-                <span className="landing-feature-number">0{index + 1}</span>
-                <h3>{service.title}</h3>
-                <p>{service.description}</p>
-              </article>
-            ))}
+          <div className="landing-feature-grid" data-reveal="rise">
+            {featuredServices.map((service, index) => {
+              const isExpanded = expandedFeature === index;
+              return (
+                <article
+                  className={`landing-feature ${isExpanded ? 'is-expanded' : ''}`}
+                  key={service.title}
+                  onPointerMove={handleCardPointerMove}
+                  onPointerLeave={resetPointerEffects}
+                  onClick={() => setExpandedFeature((current) => (current === index ? null : index))}
+                >
+                  <div className="landing-feature-top">
+                    <span className="landing-feature-number">0{index + 1}</span>
+                    <span className="landing-feature-tag">{service.tag}</span>
+                  </div>
+
+                  <div className="landing-feature-preview">
+                    <img src={service.previewImage} alt={service.previewCaption} loading="lazy" />
+                    <div className="landing-feature-preview-overlay">
+                      <span>Vista previa · {service.previewCaption}</span>
+                    </div>
+                  </div>
+
+                  <div className="landing-feature-body">
+                    <h3>{service.title}</h3>
+                    <p>{service.description}</p>
+                  </div>
+
+                  <div
+                    className={`landing-feature-details ${isExpanded ? 'is-open' : ''}`}
+                    aria-hidden={!isExpanded}
+                  >
+                    <div className="landing-feature-details-inner">
+                      <p className="landing-feature-full-copy">{service.fullInfo}</p>
+                      <ul className="landing-feature-highlights">
+                        {service.highlights.map((item) => (
+                          <li key={item}>
+                            <span aria-hidden="true">✦</span>
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <button
+                        className="landing-feature-explore-btn"
+                        type="button"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onLogin();
+                        }}
+                      >
+                        Buscar fotos de {service.title.toLowerCase()} <span aria-hidden="true">→</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    className="landing-feature-trigger"
+                    type="button"
+                    aria-expanded={isExpanded}
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      setExpandedFeature((current) => (current === index ? null : index));
+                    }}
+                  >
+                    <span className="landing-feature-trigger-dot" aria-hidden="true" />
+                    <span>{isExpanded ? 'Ocultar información' : 'Clickee aquí'}</span>
+                    <span className="landing-feature-trigger-arrow" aria-hidden="true">{isExpanded ? '↑' : '→'}</span>
+                  </button>
+                </article>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -230,65 +367,94 @@ export default function LandingPage({ onLogin }) {
         </div>
       </section>
 
-      <section className="landing-gallery" aria-labelledby="gallery-title">
+      <section className="landing-gallery landing-film-section" aria-labelledby="gallery-title">
         <div className="landing-section">
-          <div className="landing-section-heading landing-section-heading-row" data-reveal="rise">
-            <div>
-              <p className="landing-eyebrow">DE LA GALERÍA</p>
-              <h2 id="gallery-title">Imágenes de eventos reales.</h2>
+          <div className="landing-film-cta-banner" data-reveal="rise">
+            <div className="landing-film-roll" aria-hidden="true">
+              <div className="landing-film-sprockets landing-film-sprockets-top" />
+              <div className="landing-film-viewport">
+                <div className="landing-film-scanner" />
+                <div className="landing-film-track">
+                  {filmStripFrames.map((frame, index) => (
+                    <div
+                      className="landing-film-frame"
+                      key={`${frame.id}-${index}`}
+                      style={{ '--develop-delay': `${(index % 6) * -1.4}s` }}
+                    >
+                      <div className="landing-film-frame-meta">
+                        <span>REVELA 400</span>
+                        <span>◀ {frame.code}</span>
+                      </div>
+                      <div className="landing-film-frame-window">
+                        <img
+                          src={frame.url}
+                          alt={frame.title}
+                          loading="lazy"
+                          onError={(event) => {
+                            const image = event.currentTarget;
+                            if (image.dataset.fallback === 'true') return;
+                            image.dataset.fallback = 'true';
+                            image.src = '/landing/hero-2.jpg';
+                          }}
+                        />
+                        <span className="landing-film-chemical-veil" />
+                      </div>
+                      <div className="landing-film-frame-footer">
+                        <span>{frame.title}</span>
+                        <span>ISO 400 · REVELADO</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="landing-film-sprockets landing-film-sprockets-bottom" />
             </div>
-            <button className="landing-text-link" type="button" onClick={onLogin}>
-              Entrar a la galería <span aria-hidden="true">→</span>
-            </button>
+
+            <div className="landing-event-cta-card">
+              <div className="landing-event-cta-copy">
+                <h2 id="gallery-title">
+                  ¿Fuiste a un evento? Tus fotos ya<br />
+                  pueden estar acá.
+                </h2>
+              </div>
+              <button
+                className="landing-event-cta-button"
+                type="button"
+                onClick={onRegister || onLogin}
+                onPointerMove={handleMagneticPointerMove}
+                onPointerLeave={resetPointerEffects}
+              >
+                Crear mi cuenta
+              </button>
+            </div>
           </div>
-          {photoError && <p className="landing-gallery-message" role="alert">No pudimos cargar la galería: {photoError}</p>}
-          {loadingPhotos ? (
-            <p className="landing-gallery-message" role="status">Cargando fotos…</p>
-          ) : photos.length === 0 ? (
-            <p className="landing-gallery-message">Pronto vas a encontrar acá imágenes de los últimos eventos.</p>
-          ) : (
-            <div className="landing-photo-grid">
-              {photos.map((photo, index) => (
-                <button
-                  className="landing-photo-card"
-                  type="button"
-                  key={photo._id || photo.id}
-                  onClick={onLogin}
-                  data-reveal="rise"
-                  style={{ '--reveal-delay': `${index * 80}ms` }}
-                  onPointerMove={handleCardPointerMove}
-                  onPointerLeave={resetPointerEffects}
-                  aria-label={`Iniciar sesión para ver ${photo.title}`}
-                >
-                  <img
-                    src={photo.url}
-                    alt={photo.title}
-                    loading="lazy"
-                    onError={(event) => {
-                      const image = event.currentTarget;
-                      if (image.dataset.fallback === 'true') return;
-                      image.dataset.fallback = 'true';
-                      image.src = '/landing/hero-2.jpg';
-                    }}
-                  />
-                  <span className="landing-photo-caption">
-                    <strong>{photo.title}</strong>
-                    <span>{formatPrice.format(Number(photo.price) || 0)}</span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
         </div>
       </section>
 
       <section className="landing-contact landing-section" id="contacto" aria-labelledby="contact-title" data-reveal="rise">
-        <div className="landing-contact-mark" aria-hidden="true">M.</div>
+        <button
+          className="landing-contact-mark landing-camera-flash-btn"
+          type="button"
+          aria-label="Disparar flash e ir a Iniciar sesión"
+          title="Click para sacar foto e iniciar sesión"
+          onClick={(event) => triggerCameraFlash(event.currentTarget)}
+        >
+          <BrandCameraLogo />
+        </button>
         <p className="landing-eyebrow">CADA HISTORIA MERECE SER CONTADA</p>
         <h2 id="contact-title">Volvé a vivir cada momento.</h2>
         <p>Ingresá a la galería para encontrar y elegir las fotos de los eventos que compartiste.</p>
-        <button className="landing-button landing-button-primary" type="button" onClick={onLogin} onPointerMove={handleMagneticPointerMove} onPointerLeave={resetPointerEffects}>
-          Entrar a Memories <span aria-hidden="true">→</span>
+        <button
+          className="landing-button landing-button-primary"
+          type="button"
+          onClick={(event) => {
+            const cameraBtn = event.currentTarget.parentElement?.querySelector('.landing-camera-flash-btn') || event.currentTarget;
+            triggerCameraFlash(cameraBtn);
+          }}
+          onPointerMove={handleMagneticPointerMove}
+          onPointerLeave={resetPointerEffects}
+        >
+          Click en la camarita <span aria-hidden="true">↑</span>
         </button>
       </section>
     </div>

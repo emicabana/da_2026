@@ -17,7 +17,8 @@ export class CollaboratorService {
         return fullAccess?.owner_username || username;
     }
 
-    async getList(username) {
+    async getList(username, isAdmin = false) {
+        if (isAdmin) return this.collaboratorRepo.find({}).populate("album_id", "name").sort({ createdAt: -1 });
         const ownerUsername = await this.getEffectiveOwner(username);
         return this.collaboratorRepo.find({ owner_username: ownerUsername })
             .populate("album_id", "name")
@@ -139,11 +140,11 @@ export class CollaboratorService {
             throw Object.assign(new Error("Colaboración no encontrada."), { status: 404 });
     }
 
-    async delete(username, id) {
+    async delete(username, id, isAdmin = false) {
         if (!mongoose.isValidObjectId(id))
             throw Object.assign(new Error("El colaborador seleccionado no es válido."), { status: 400 });
         const ownerUsername = await this.getEffectiveOwner(username);
-        const deleted = await this.collaboratorRepo.findOneAndDelete({ _id: id, owner_username: ownerUsername });
+        const deleted = await this.collaboratorRepo.findOneAndDelete(isAdmin ? { _id: id } : { _id: id, owner_username: ownerUsername });
         if (!deleted)
             throw Object.assign(new Error("Colaborador no encontrado."), { status: 404 });
     }

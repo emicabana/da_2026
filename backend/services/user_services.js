@@ -79,11 +79,19 @@ export class UserService {
         if (existentUser)
             throw Object.assign(new Error("El nombre de usuario ya existe"), { status: 409 });
 
-        return await this.userRepo.create({
-            ...user,
-            password: bcrypt.hashSync(user.password, 10),
-            role,
-        });
+        try {
+            return await this.userRepo.create({
+                ...user,
+                password: bcrypt.hashSync(user.password, 10),
+                role,
+            });
+        } catch (error) {
+            if (error.code === 11000 && error.keyPattern?.email)
+                throw Object.assign(new Error("Ese correo electrónico ya está asociado a otra cuenta"), { status: 409 });
+            if (error.code === 11000 && error.keyPattern?.user_name)
+                throw Object.assign(new Error("El nombre de usuario ya existe"), { status: 409 });
+            throw error;
+        }
     }
 
     async register(data) {
@@ -153,15 +161,23 @@ export class UserService {
         if (updates.password)
             updates.password = bcrypt.hashSync(updates.password, 10);
 
-        const updated = await this.userRepo.findOneAndUpdate(
-            { user_name: username },
-            updates,
-            { new: true, runValidators: true }
-        );
-        if (!updated)
-            throw Object.assign(new Error("Usuario no encontrado"), { status: 404 });
+        try {
+            const updated = await this.userRepo.findOneAndUpdate(
+                { user_name: username },
+                updates,
+                { new: true, runValidators: true }
+            );
+            if (!updated)
+                throw Object.assign(new Error("Usuario no encontrado"), { status: 404 });
 
-        return updated;
+            return updated;
+        } catch (error) {
+            if (error.code === 11000 && error.keyPattern?.email)
+                throw Object.assign(new Error("Ese correo electrónico ya está asociado a otra cuenta"), { status: 409 });
+            if (error.code === 11000 && error.keyPattern?.user_name)
+                throw Object.assign(new Error("El nombre de usuario ya existe"), { status: 409 });
+            throw error;
+        }
     }
 
     async delete(username) {

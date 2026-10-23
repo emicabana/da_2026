@@ -17,8 +17,9 @@ export class OrderService {
         return await this.orderRepo.find({ username }).populate("photos");
     }
 
-    async getPhotographerSales(username) {
-        const photographerPhotos = await this.photoRepo.find({ owner_username: username }).select("_id");
+
+    async getPhotographerSales(username, isAdmin = false) {
+        const photographerPhotos = await this.photoRepo.find(isAdmin ? {} : { owner_username: username }).select("_id");
         if (!photographerPhotos.length)
             return [];
         const orders = await this.orderRepo.find({
@@ -29,7 +30,7 @@ export class OrderService {
             .select("user_name display_name email phone");
         const customersByUsername = new Map(customers.map((customer) => [customer.user_name, customer]));
         return orders.flatMap((order) => {
-            const photos = order.photos.filter((photo) => photo?.owner_username === username);
+            const photos = isAdmin ? order.photos.filter(Boolean) : order.photos.filter((photo) => photo?.owner_username === username);
             if (!photos.length) return [];
             const grossTotal = order.photos.reduce((sum, photo) => sum + (photo?.price || 0), 0);
             const photographerGross = photos.reduce((sum, photo) => sum + (photo.price || 0), 0);
@@ -118,14 +119,15 @@ export class OrderService {
         if (couponCode) {
             const normalizedCode = typeof couponCode === "string" ? couponCode.trim().toUpperCase() : "";
             const couponOwner = photos.find((photo) => photo.owner_username)?.owner_username;
+            const owners = [...new Set(photos.map((photo) => photo.owner_username).filter(Boolean))];
             if (!normalizedCode || !couponOwner)
                 throw Object.assign(new Error("El cupón no es válido para estas fotos."), { status: 400 });
-            coupon = await this.couponRepo.findOne({ code: normalizedCode, owner_username: couponOwner, active: true });
+            coupon = await this.couponRepo.findOne({ code: normalizedCode, owner_username: { $in: owners }, active: true });
             if (!coupon || (coupon.expires_at && coupon.expires_at <= new Date())
                 || (coupon.max_uses && coupon.used_count >= coupon.max_uses))
                 throw Object.assign(new Error("El cupón no existe, venció o alcanzó su límite de usos."), { status: 400 });
             const eligiblePhotos = photos.filter((photo) =>
-                photo.owner_username === couponOwner
+                photo.owner_username === coupon.owner_username
                 && (!coupon.album_id || String(photo.album_id) === String(coupon.album_id))
             );
             if (!eligiblePhotos.length)
@@ -155,7 +157,7 @@ export class OrderService {
             const usedCoupon = await this.couponRepo.findOneAndUpdate(
                 usageFilter,
                 { $inc: { used_count: 1 } },
-                { new: true }
+                { new: true, runValidators: true }
             );
             if (!usedCoupon) {
                 await this.orderRepo.findByIdAndDelete(order._id);
@@ -166,13 +168,15 @@ export class OrderService {
     }
 
     async updateStatus(id, status) {
+        if (!["pending", "paid", "delivered"].includes(status))
+            throw Object.assign(new Error("El estado del pedido debe ser pending, paid o delivered"), { status: 400 });
         const updated = await this.orderRepo.findByIdAndUpdate(
             id,
             { status },
-            { new: true }
+            { new: true, runValidators: true }
         );
         if (!updated)
             throw Object.assign(new Error("Pedido no encontrado"), { status: 404 });
-        return updated;
+        return updated.populate("photos");
     }
 }

@@ -15,7 +15,7 @@ export function configureOrderRouter(router) {
     });
 
     // Usuario logueado — ver sus propios pedidos
-    router.get("/orders/mine", checkRoleMiddleware("customer"), async (req, res, next) => {
+    router.get("/orders/mine", checkRoleMiddleware(["admin", "customer"]), async (req, res, next) => {
         try {
             const orders = await orderService.getByUsername(req.session.username);
             res.json(orders);
@@ -38,7 +38,7 @@ export function configureOrderRouter(router) {
     });
 
     // Usuario logueado — crear pedido
-    router.post("/orders", checkRoleMiddleware("customer"), async (req, res, next) => {
+    router.post("/orders", checkRoleMiddleware(["admin", "customer"]), async (req, res, next) => {
         try {
             const order = await orderService.create(req.session.username, req.body.photos, req.body.coupon_code);
             res.status(201).json(order);

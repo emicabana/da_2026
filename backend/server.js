@@ -11,6 +11,16 @@ import logMiddleware from "./middlewares/log_middleware.js";
 
 const app = express();
 
+app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PATCH, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    if (req.method === "OPTIONS") {
+        res.status(204).end();
+        return;
+    }
+    next();
+});
 app.use(express.json());
 app.use("/uploads", express.static(uploadsDirectory, { fallthrough: false, maxAge: "1d" }));
 app.use(checkAutorizationTokenMiddleware);

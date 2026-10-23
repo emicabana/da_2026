@@ -92,7 +92,7 @@ function getPresetRange(preset) {
   return { from: toDateInputValue(start), to: toDateInputValue(end) };
 }
 
-export default function PhotographerTools({ token, username, view, onBack }) {
+export default function PhotographerTools({ token, username, isAdmin = false, view, onBack }) {
   const [sales, setSales] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [coupons, setCoupons] = useState([]);
@@ -127,7 +127,7 @@ export default function PhotographerTools({ token, username, view, onBack }) {
       billing: () => Promise.resolve(),
       discounts: () => getAlbums(token).then((data) => {
         if (!active) return;
-        const ownedAlbums = data.filter((album) => album.owner_username === username);
+        const ownedAlbums = isAdmin ? data : data.filter((album) => album.owner_username === username);
         setAlbums(ownedAlbums);
         setSelectedDiscountAlbum((current) => current || String(getId(ownedAlbums[0]) || ''));
         setOffers(Object.fromEntries(ownedAlbums.map((album) => [getId(album), Object.fromEntries(
@@ -135,7 +135,7 @@ export default function PhotographerTools({ token, username, view, onBack }) {
         )])));
       }),
       coupons: () => Promise.all([getPhotographerCoupons(token), getAlbums(token)]).then(([data, userAlbums]) => {
-        if (active) { setCoupons(data); setAlbums(userAlbums.filter((album) => album.owner_username === username)); }
+        if (active) { setCoupons(data); setAlbums(isAdmin ? userAlbums : userAlbums.filter((album) => album.owner_username === username)); }
       }),
       collaborators: () => Promise.all([
         getPhotographerCollaborators(token),
@@ -165,7 +165,7 @@ export default function PhotographerTools({ token, username, view, onBack }) {
       })
       .finally(() => { if (active) setLoadedView(view); });
     return () => { active = false; };
-  }, [token, username, view]);
+  }, [token, username, isAdmin, view]);
 
   useEffect(() => {
     if (!discountDialogOpen) return undefined;
@@ -369,7 +369,8 @@ export default function PhotographerTools({ token, username, view, onBack }) {
       </div>}
       {error && !discountDialogOpen && !couponDialogOpen && !collaboratorDialogOpen && <p className="notice notice-error" role="alert">{error}</p>}
       {message && <p className="notice notice-success" role="status">{message}</p>}
-      {loading ? <div className="empty-state">Cargando información…</div> : null}
+      {saving && !discountDialogOpen && !couponDialogOpen && !collaboratorDialogOpen && <div className="loader-status" role="status" aria-live="polite"><div className="loader" /><span>Guardando cambios…</span></div>}
+      {loading ? <div className="empty-state" role="status" aria-live="polite"><div className="loader" /><strong>Cargando información…</strong></div> : null}
 
       {(view === 'sales' || view === 'billing') && !loading && (
         <>
@@ -595,7 +596,7 @@ export default function PhotographerTools({ token, username, view, onBack }) {
                     <button className="photographer-add-tier" type="button" onClick={() => setDiscountDraft((current) => ({ ...current, tiers: [...current.tiers, { min_quantity: '', discount_percent: '' }] }))}><span aria-hidden="true">⊕</span> Agregar nivel</button>
                   </div>
                   {error && <p className="notice notice-error" role="alert">{error}</p>}
-                  <div className="photographer-discount-actions"><button className="button button-primary" type="submit" disabled={saving}>{saving ? 'Creando…' : 'Crear'}</button></div>
+                  <div className="photographer-discount-actions">{saving && <div className="loader" role="status" aria-label="Creando descuento" />}<button className="button button-primary" type="submit" disabled={saving}>{saving ? 'Creando…' : 'Crear'}</button></div>
                 </form>
               </section>
             </div>
@@ -653,7 +654,7 @@ export default function PhotographerTools({ token, username, view, onBack }) {
                     <select className="field" value={couponDraft.album_id} onChange={(event) => setCouponDraft({ ...couponDraft, album_id: event.target.value })}><option value="">Todos tus álbumes</option>{albums.map((album) => <option key={getId(album)} value={getId(album)}>{album.name}</option>)}</select>
                   </label>
                   {error && <p className="notice notice-error photographer-coupon-error" role="alert">{error}</p>}
-                  <div className="photographer-coupon-actions"><button className="photographer-create-coupon" type="submit" disabled={saving}>{saving ? 'Creando…' : 'Crear cupón'}</button></div>
+                  <div className="photographer-coupon-actions">{saving && <div className="loader" role="status" aria-label="Creando cupón" />}<button className="photographer-create-coupon" type="submit" disabled={saving}>{saving ? 'Creando…' : 'Crear cupón'}</button></div>
                 </form>
               </section>
             </div>
@@ -749,9 +750,9 @@ export default function PhotographerTools({ token, username, view, onBack }) {
                       </select>
                     </label>
                   )}
-                  <p className="photographer-collaboration-invite-note">La invitación aparecerá dentro de Memories en “Mis colaboraciones”. El correo no se envía porque el proyecto aún no tiene un servicio de email integrado.</p>
+                  <p className="photographer-collaboration-invite-note">La invitación aparecerá dentro de Revela en “Mis colaboraciones”. El correo no se envía porque el proyecto aún no tiene un servicio de email integrado.</p>
                   {error && <p className="notice notice-error" role="alert">{error}</p>}
-                  <div className="photographer-collaborator-actions"><button className="button button-quiet" type="button" onClick={() => setCollaboratorDialogOpen(false)}>Cancelar</button><button className="photographer-create-coupon" type="submit" disabled={saving || (collaboratorDraft.permission_level === 'event' && !albums.some((album) => album.owner_username === username || album.shared_permission === 'full'))}>{saving ? 'Enviando…' : 'Enviar invitación'}</button></div>
+                  <div className="photographer-collaborator-actions">{saving && <div className="loader" role="status" aria-label="Enviando invitación" />}<button className="button button-quiet" type="button" onClick={() => setCollaboratorDialogOpen(false)}>Cancelar</button><button className="photographer-create-coupon" type="submit" disabled={saving || (collaboratorDraft.permission_level === 'event' && !albums.some((album) => album.owner_username === username || album.shared_permission === 'full'))}>{saving ? 'Enviando…' : 'Enviar invitación'}</button></div>
                 </form>
               </section>
             </div>

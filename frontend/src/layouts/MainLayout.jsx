@@ -16,7 +16,7 @@ export default function MainLayout({
   onHome,
 }) {
   return (
-    <div className={`app-shell ${session ? 'app-shell-authenticated' : ''} ${showPublicNavigation ? 'app-shell-public' : ''}`} data-theme={theme}>
+    <div className={`app-shell ${session ? 'app-shell-authenticated' : 'app-shell-public'} ${showLogin ? 'app-shell-auth' : ''}`} data-theme={theme}>
       <Header
         theme={theme}
         onToggleTheme={onToggleTheme}
@@ -30,7 +30,7 @@ export default function MainLayout({
       <div className={`app-frame ${session ? '' : 'app-frame-login'} ${showPublicNavigation ? 'app-frame-public' : ''} ${showLogin ? 'app-frame-auth' : ''}`}>
         <Menu
           role={session?.role}
-          activeView={session?.role === 'customer' || session?.role === 'photographer' ? activeView : undefined}
+          activeView={session?.role ? activeView : undefined}
           onNavigate={onNavigate}
         />
         <main className={`main-content ${showPublicNavigation ? 'main-content-public' : ''} ${showLogin ? 'main-content-auth' : ''}`}>{children}</main>

@@ -119,7 +119,7 @@ export class PhotoService {
         if (data.album_id !== undefined) {
             updates.album_id = album?._id;
             if (album) {
-                const type = data.type || "photo";
+                const type = data.type || existingPhoto.type || "photo";
                 updates.price = type === "video" ? album.video_price : album.photo_price;
             }
         }

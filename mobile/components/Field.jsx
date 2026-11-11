@@ -1,12 +1,14 @@
-import { View, Text } from "react-native";
+import { View, Text } from 'react-native';
+import styles from '../style';
 
 export default function Field({
-    label,
-    children,
+  label,
+  children
 }) {
-    return <View>
-        {label && <Text> {label} </Text> || null}
-        {children}
-    </View>;
+  return <View
+    style={styles.field}
+  >
+    {label && <Text style={styles.fieldLabel}>{label}</Text> || null}
+    {children}
+  </View>;
 }
-    

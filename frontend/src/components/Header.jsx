@@ -51,7 +51,18 @@ function triggerCameraFlashToLogin(targetElement) {
   );
 }
 
-export default function Header({ theme, onToggleTheme, session, onLogout, showPublicNavigation, showLogin, onShowLogin, onHome }) {
+export default function Header({
+  theme,
+  onToggleTheme,
+  session,
+  onLogout,
+  showPublicNavigation,
+  showLogin,
+  onShowLogin,
+  onHome,
+  publicPage = 'landing',
+  onOpenAbout,
+}) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapseProgress, setCollapseProgress] = useState(0);
   const [flashEffect, setFlashEffect] = useState(null);
@@ -101,6 +112,31 @@ export default function Header({ theme, onToggleTheme, session, onLogout, showPu
 
   function closeMenu() {
     setMenuOpen(false);
+  }
+
+  function handleNavLinkClick(event, href) {
+    closeMenu();
+    if (href === '#nosotros') {
+      event.preventDefault();
+      onOpenAbout?.();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    if (publicPage === 'about') {
+      event.preventDefault();
+      onHome?.(href);
+      return;
+    }
+
+    if (typeof href === 'string' && href.startsWith('#')) {
+      const target = document.querySelector(href);
+      if (target) {
+        event.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        window.history?.replaceState?.(null, '', href);
+      }
+    }
   }
 
   function handleBrandClick(event) {
@@ -167,7 +203,18 @@ export default function Header({ theme, onToggleTheme, session, onLogout, showPu
           <>
             <nav className={`topbar-nav ${menuOpen ? 'is-open' : ''}`} aria-label="Navegación principal">
               {publicLinks.map((link) => (
-                <a href={link.href} key={link.href} onClick={closeMenu}>{link.label}</a>
+                <a
+                  href={link.href}
+                  key={link.href}
+                  className={
+                    publicPage === 'about' && link.href === '#nosotros'
+                      ? 'is-active'
+                      : ''
+                  }
+                  onClick={(event) => handleNavLinkClick(event, link.href)}
+                >
+                  {link.label}
+                </a>
               ))}
               <button className="button button-nav-login" type="button" onClick={() => { closeMenu(); onShowLogin(); }}>
                 Iniciar sesión

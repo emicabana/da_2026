@@ -14,6 +14,8 @@ export default function MainLayout({
   showLogin,
   onShowLogin,
   onHome,
+  publicPage,
+  onOpenAbout,
 }) {
   return (
     <div className={`app-shell ${session ? 'app-shell-authenticated' : 'app-shell-public'} ${showLogin ? 'app-shell-auth' : ''}`} data-theme={theme}>
@@ -26,6 +28,8 @@ export default function MainLayout({
         showLogin={showLogin}
         onShowLogin={onShowLogin}
         onHome={onHome}
+        publicPage={publicPage}
+        onOpenAbout={onOpenAbout}
       />
       <div className={`app-frame ${session ? '' : 'app-frame-login'} ${showPublicNavigation ? 'app-frame-public' : ''} ${showLogin ? 'app-frame-auth' : ''}`}>
         <Menu

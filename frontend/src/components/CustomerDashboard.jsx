@@ -395,6 +395,22 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
                         loading="lazy"
                         draggable={false}
                       />
+                      <div className="customer-showcase-watermark" aria-hidden="true">
+                        <div className="customer-watermark-pattern">
+                          {watermarkStampRows.map((row) => (
+                            <div className="customer-watermark-row" key={row}>
+                              <span>revela</span>
+                              <span>revela</span>
+                              <span>revela</span>
+                              <span>revela</span>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="customer-watermark-center">
+                          <span className="customer-watermark-emblem">◎</span>
+                          <span className="customer-watermark-brand">revela</span>
+                        </div>
+                      </div>
                       <button
                         type="button"
                         className="customer-tile-remove-btn"

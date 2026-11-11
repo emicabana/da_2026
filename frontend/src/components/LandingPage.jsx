@@ -1,124 +1,56 @@
-import { useEffect, useRef, useState } from 'react';
-import { getPhotos } from '../services/api';
-import { BrandCameraLogo } from './Header';
+import { useEffect, useRef } from 'react';
+import CircularCarousel from './CircularCarousel';
+import ScrollReveal from './ScrollReveal';
+import SideRays from './SideRays';
+import WarpText from './WarpText';
 
-function triggerCameraFlash(targetElement) {
-  let x = '50vw';
-  let y = '50vh';
-  if (targetElement && typeof targetElement.getBoundingClientRect === 'function') {
-    const rect = targetElement.getBoundingClientRect();
-    x = `${Math.round(rect.left + rect.width / 2)}px`;
-    y = `${Math.round(rect.top + rect.height / 2)}px`;
-  }
-  window.dispatchEvent(new CustomEvent('memories:camera-flash', { detail: { x, y } }));
-}
-
-const heroSlides = [
-  { src: '/landing/hero-2.jpg', alt: 'Aftermovie Session Pro x Q’Lokura' },
-  { src: '/landing/hero-3.jpg', alt: 'Aftermovie Chile y Jag' },
-  { src: '/landing/hero-4.jpg', alt: 'Detrás del show de Session Pro x Q’Lokura' },
-  { src: '/landing/hero-5.jpg', alt: 'Aftermovie Jag Cub' },
+const marqueePhrases = [
+  'CADA MOMENTO, REVELADO',
+  'FOTOGRAFÍA Y VIDEO DE EVENTOS',
+  'RECITALES · BODAS · EGRESOS · CELEBRACIONES',
+  'ENCONTRÁ TUS FOTOS EN SEGUNDOS',
+  'GALERÍAS OFICIALES EN ALTA RESOLUCIÓN',
+  'HISTORIAS REALES QUE PERDURAN',
 ];
 
 const featuredEvents = [
   {
-    image: '/landing/event-1.jpg',
+    image: '',
     category: 'MÚSICA EN VIVO · INDIOS X SESSION PRO',
     title: 'La energía de un show',
     description: 'La fuerza de la música en vivo, contada desde el escenario y entre el público.',
   },
   {
-    image: '/landing/event-2.jpg',
+    image: '',
     category: 'AFTERMOVIE · SESSION PRO',
     title: 'Session Pro x Q’Lokura',
     description: 'Luces, música y todos esos instantes que hacen único a cada espectáculo.',
   },
   {
-    image: '/landing/event-3.jpg',
+    image: '',
     category: 'BACKSTAGE · SESSION PRO X Q’LOKURA',
     title: 'Lo que pasa detrás de escena',
     description: 'Una mirada cercana a las personas y los momentos detrás de cada evento.',
   },
-];
-
-const featuredServices = [
   {
-    title: 'Celebraciones',
-    tag: 'SOCIALES · BODAS · EGRESOS',
-    previewImage: '/landing/hero-4.jpg',
-    previewCaption: 'Casamientos, 15 años, graduaciones y fiestas',
-    description: 'Cumpleaños, fiestas y encuentros importantes con quienes más querés.',
-    fullInfo: 'Reviví cada abrazo, brindis y baile con galerías organizadas por evento. Los fotógrafos suben el álbum completo para que cada invitado encuentre sus fotos favoritas en segundos y las descargue en su calidad original.',
-    highlights: [
-      'Cobertura de bodas, fiestas de 15, egresos y aniversarios',
-      'Búsqueda simple por álbum y fecha del evento',
-      'Descuentos automáticos por cantidad o paquetes de fotos',
-      'Descarga inmediata en alta resolución al confirmar tu pedido',
-    ],
+    image: '',
+    category: 'CELEBRACIONES · GALERÍAS EN VIVO',
+    title: 'Noches que quedan para siempre',
+    description: 'Encontrá tus retratos y momentos espontáneos junto a quienes compartieron la fecha.',
   },
   {
-    title: 'Shows en vivo',
-    tag: 'RECITALES · FESTIVALES · ESCENARIO',
-    previewImage: '/landing/event-1.jpg',
-    previewCaption: 'Recitales, bandas en vivo y festivales',
-    description: 'La música, el escenario y la energía compartida desde todos los ángulos.',
-    fullInfo: 'Capturamos la potencia de cada show tanto sobre el escenario como entre el público. Encontrá las postales del recital al que asististe o el registro visual completo de tu banda y producción en vivo.',
-    highlights: [
-      'Fotografía de alta velocidad bajo luces de escenario',
-      'Tomas del público, pogo y ambiente del recital',
-      'Aftermovies y clips de video en alta definición',
-      'Catálogo directo de los fotógrafos oficiales de cada fecha',
-    ],
+    image: '',
+    category: 'ESCENARIO · COBERTURA OFICIAL',
+    title: 'Cada ángulo del recital',
+    description: 'Tomas de alta velocidad bajo las luces del show y la emoción del público.',
   },
   {
-    title: 'Eventos corporativos',
-    tag: 'CONFERENCIAS · MARCAS · EQUIPOS',
-    previewImage: '/landing/event-2.jpg',
-    previewCaption: 'Lanzamientos, congresos y encuentros de equipo',
-    description: 'Encuentros de equipo, lanzamientos y momentos que conectan personas.',
-    fullInfo: 'Documentación profesional para jornadas empresariales, presentaciones de producto, premiaciones y networking. Ideal para que asistentes, speakers y equipos accedan al material prensa y recuerdo del encuentro.',
-    highlights: [
-      'Cobertura de charlas, paneles, stands y entregas de premios',
-      'Galerías centralizadas de fácil acceso para asistentes',
-      'Material listo para redes profesionales y comunicación interna',
-      'Opciones de compra por paquete completo o selección individual',
-    ],
-  },
-  {
-    title: 'Retratos y backstage',
-    tag: 'DETRÁS DE ESCENA · AUTOR · RETRATO',
-    previewImage: '/landing/event-3.jpg',
-    previewCaption: 'Camarines, ensayos y retratos espontáneos',
-    description: 'Las personas y los instantes espontáneos que suceden fuera de escena.',
-    fullInfo: 'Más allá del momento principal, cada evento guarda historias íntimas en la previa, los camarines y los preparativos. Una mirada documental y cercana a los protagonistas antes y después de salir a escena.',
-    highlights: [
-      'Registro documental de ensayos, pruebas de sonido y previa',
-      'Retratos naturales y espontáneos con estética editorial',
-      'Trabajo colaborativo entre múltiples fotógrafos del staff',
-      'Obra original protegida con entrega directa de su autor',
-    ],
+    image: '',
+    category: 'SOCIALES · EGRESOS · FIESTAS',
+    title: 'Historias reales en alta calidad',
+    description: 'Descargá tus fotos favoritas directamente del álbum oficial de cada fotógrafo.',
   },
 ];
-
-const fallbackFilmFrames = [
-  { id: 'film-1', url: '/landing/event-1.jpg', title: 'Indios x Session Pro', code: '01A' },
-  { id: 'film-2', url: '/landing/hero-2.jpg', title: 'Session Pro x Q’Lokura', code: '02A' },
-  { id: 'film-3', url: '/landing/event-2.jpg', title: 'Escenario en vivo', code: '03A' },
-  { id: 'film-4', url: '/landing/hero-3.jpg', title: 'Chile y Jag', code: '04A' },
-  { id: 'film-5', url: '/landing/event-3.jpg', title: 'Detrás de escena', code: '05A' },
-  { id: 'film-6', url: '/landing/hero-5.jpg', title: 'Aftermovie Jag Cub', code: '06A' },
-];
-
-function handleCardPointerMove(event) {
-  if (event.pointerType !== 'mouse') return;
-  const bounds = event.currentTarget.getBoundingClientRect();
-  const x = (event.clientX - bounds.left) / bounds.width;
-  const y = (event.clientY - bounds.top) / bounds.height;
-  event.currentTarget.style.setProperty('--card-rotate-x', `${(0.5 - y) * 5}deg`);
-  event.currentTarget.style.setProperty('--card-rotate-y', `${(x - 0.5) * 5}deg`);
-  event.currentTarget.style.setProperty('--spotlight-x', `${x * 100}%`);
-  event.currentTarget.style.setProperty('--spotlight-y', `${y * 100}%`);
-}
 
 function handleMagneticPointerMove(event) {
   if (event.pointerType !== 'mouse') return;
@@ -141,11 +73,8 @@ function resetPointerEffects(event) {
   element.style.removeProperty('--spotlight-y');
 }
 
-export default function LandingPage({ onLogin, onRegister }) {
+export default function LandingPage({ onLogin }) {
   const landingRef = useRef(null);
-  const [activeTile, setActiveTile] = useState(null);
-  const [expandedFeature, setExpandedFeature] = useState(null);
-  const [photos, setPhotos] = useState([]);
 
   useEffect(() => {
     const root = landingRef.current;
@@ -181,43 +110,37 @@ export default function LandingPage({ onLogin, onRegister }) {
     };
   }, []);
 
-  useEffect(() => {
-    let active = true;
-
-    getPhotos()
-      .then((catalog) => {
-        if (active) setPhotos(catalog.slice(0, 6));
-      })
-      .catch(() => {
-        // Fallback film frames are shown automatically when the API is unavailable.
-      });
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  const mappedCatalogFrames = photos.map((photo, index) => ({
-    id: String(photo._id || photo.id || `catalog-${index}`),
-    url: photo.url,
-    title: photo.title || 'Evento en vivo',
-    code: `0${index + 1}A`,
-  }));
-  const baseFilmFrames = [...mappedCatalogFrames, ...fallbackFilmFrames]
-    .slice(0, 6)
-    .map((frame, index) => ({ ...frame, code: `0${index + 1}A` }));
-  const filmStripFrames = [...baseFilmFrames, ...baseFilmFrames];
-
   return (
     <div className="landing-page" ref={landingRef}>
-      <section className="landing-hero" id="inicio" aria-labelledby="landing-title">
-        <div className="landing-hero-copy" data-reveal="left">
+      <SideRays
+        rayColor1="#ffffff"
+        rayColor2="#7c3aed"
+        blend={0.6}
+        origin="top-right"
+        speed={2.5}
+        intensity={2}
+        spread={2}
+        followMouse
+      />
+      <section className="landing-hero landing-hero-centered" id="inicio" aria-labelledby="landing-title">
+        <div className="landing-hero-copy landing-hero-copy-centered" data-reveal="rise">
           <p className="landing-eyebrow"><span /> FOTOS Y VIDEOS DE EVENTOS</p>
-          <h1 id="landing-title">Cada<br />momento,<br /><span>revelado.</span></h1>
-          <p className="landing-lead">
-            Encontrá tus fotos y videos del casamiento, del egreso o del recital en los álbumes
-            que publican los fotógrafos del evento.
-          </p>
+          <WarpText
+            id="landing-title"
+            topLine="Cada momento,"
+            bottomLine="REVELADO."
+          />
+          <ScrollReveal
+            as="p"
+            containerClassName="landing-lead"
+            baseOpacity={0.1}
+            enableBlur
+            baseRotation={3}
+            blurStrength={4}
+            animateOnMount
+          >
+            Encontrá tus fotos y videos del casamiento, del egreso o del recital en los álbumes que publican los fotógrafos del evento.
+          </ScrollReveal>
           <div className="landing-actions">
             <button className="landing-button landing-button-primary" type="button" onClick={onLogin} onPointerMove={handleMagneticPointerMove} onPointerLeave={resetPointerEffects}>
               Buscar mi evento
@@ -226,236 +149,153 @@ export default function LandingPage({ onLogin, onRegister }) {
               Soy fotógrafo
             </button>
           </div>
-          <p className="landing-note">Historias reales. Momentos que perduran.</p>
-        </div>
-
-        <div className="landing-mosaic" data-active={activeTile ?? ''} role="group" aria-label="Fotografías de eventos" data-reveal="right">
-          {heroSlides.map((slide, index) => (
-            <div
-              className={`landing-mosaic-tile landing-mosaic-tile-${index} ${activeTile === index ? 'is-focused' : ''}`}
-              key={slide.src}
-              onPointerEnter={(event) => {
-                if (event.pointerType === 'mouse') setActiveTile(index);
-              }}
-              onPointerLeave={(event) => {
-                if (event.pointerType === 'mouse') setActiveTile(null);
-              }}
-            >
-              <img src={slide.src} alt={slide.alt} />
-            </div>
-          ))}
+          <ScrollReveal
+            as="p"
+            containerClassName="landing-note"
+            baseOpacity={0.1}
+            enableBlur
+            baseRotation={2}
+            blurStrength={4}
+            animateOnMount
+          >
+            Historias reales. Momentos que perduran.
+          </ScrollReveal>
         </div>
       </section>
 
-      <section className="landing-features" id="nosotros" aria-labelledby="features-title">
-        <div className="landing-section">
-          <div className="landing-section-heading" data-reveal="rise">
-            <p className="landing-eyebrow">HISTORIAS EN CADA ENCUENTRO</p>
-            <h2 id="features-title">Un recuerdo para cada ocasión.</h2>
-            <p>Una mirada atenta a la energía, las personas y los detalles de cada evento.</p>
-          </div>
-          <div className="landing-feature-grid" data-reveal="rise">
-            {featuredServices.map((service, index) => {
-              const isExpanded = expandedFeature === index;
-              return (
-                <article
-                  className={`landing-feature ${isExpanded ? 'is-expanded' : ''}`}
-                  key={service.title}
-                  onPointerMove={handleCardPointerMove}
-                  onPointerLeave={resetPointerEffects}
-                  onClick={() => setExpandedFeature((current) => (current === index ? null : index))}
-                >
-                  <div className="landing-feature-top">
-                    <span className="landing-feature-number">0{index + 1}</span>
-                    <span className="landing-feature-tag">{service.tag}</span>
-                  </div>
+      <div className="landing-marquee-strip" aria-label="Franja informativa de Revela">
+        <div className="landing-marquee-track">
+          {[0, 1].map((copyIndex) => (
+            <div className="landing-marquee-group" key={copyIndex} aria-hidden={copyIndex === 1 ? 'true' : undefined}>
+              {marqueePhrases.map((phrase) => (
+                <span className="landing-marquee-item" key={`${copyIndex}-${phrase}`}>
+                  <span>{phrase}</span>
+                  <span className="landing-marquee-separator" aria-hidden="true">✦</span>
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
 
-                  <div className="landing-feature-preview">
-                    <img src={service.previewImage} alt={service.previewCaption} loading="lazy" />
-                    <div className="landing-feature-preview-overlay">
-                      <span>Vista previa · {service.previewCaption}</span>
-                    </div>
-                  </div>
-
-                  <div className="landing-feature-body">
-                    <h3>{service.title}</h3>
-                    <p>{service.description}</p>
-                  </div>
-
-                  <div
-                    className={`landing-feature-details ${isExpanded ? 'is-open' : ''}`}
-                    aria-hidden={!isExpanded}
-                  >
-                    <div className="landing-feature-details-inner">
-                      <p className="landing-feature-full-copy">{service.fullInfo}</p>
-                      <ul className="landing-feature-highlights">
-                        {service.highlights.map((item) => (
-                          <li key={item}>
-                            <span aria-hidden="true">✦</span>
-                            <span>{item}</span>
-                          </li>
-                        ))}
-                      </ul>
-                      <button
-                        className="landing-feature-explore-btn"
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onLogin();
-                        }}
-                      >
-                        Buscar fotos de {service.title.toLowerCase()} <span aria-hidden="true">→</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    className="landing-feature-trigger"
-                    type="button"
-                    aria-expanded={isExpanded}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      setExpandedFeature((current) => (current === index ? null : index));
-                    }}
-                  >
-                    <span className="landing-feature-trigger-dot" aria-hidden="true" />
-                    <span>{isExpanded ? 'Ocultar información' : 'Clickee aquí'}</span>
-                    <span className="landing-feature-trigger-arrow" aria-hidden="true">{isExpanded ? '↑' : '→'}</span>
-                  </button>
-                </article>
-              );
-            })}
-          </div>
+      <section className="landing-features landing-features-plain" id="nosotros" aria-labelledby="features-title">
+        <div className="landing-section landing-scroll-reveal-showcase">
+          <ScrollReveal
+            as="p"
+            containerClassName="landing-eyebrow"
+            baseOpacity={0.1}
+            enableBlur
+            baseRotation={2}
+            blurStrength={4}
+          >
+            HISTORIAS EN CADA ENCUENTRO
+          </ScrollReveal>
+          <ScrollReveal
+            as="h2"
+            id="features-title"
+            containerClassName="landing-scroll-reveal-statement"
+            baseOpacity={0.1}
+            enableBlur
+            baseRotation={3}
+            blurStrength={4}
+          >
+            Un recuerdo para cada ocasión. Capturamos la energía, las personas y los detalles de cada celebración, recital y encuentro para que vuelvas a vivirlos cuando quieras.
+          </ScrollReveal>
         </div>
       </section>
 
       <section className="landing-events landing-section" id="eventos" aria-labelledby="events-title">
-        <div className="landing-section-heading landing-section-heading-row" data-reveal="rise">
+        <div className="landing-section-heading landing-section-heading-row">
           <div>
-            <p className="landing-eyebrow">ÁLBUMES RECIENTES</p>
-            <h2 id="events-title">Cada evento, una nueva historia.</h2>
-            <p>Una selección de proyectos de fotografía y video en vivo.</p>
+            <ScrollReveal
+              as="p"
+              containerClassName="landing-eyebrow"
+              baseOpacity={0.1}
+              enableBlur
+              baseRotation={2}
+              blurStrength={4}
+            >
+              ÁLBUMES RECIENTES
+            </ScrollReveal>
+            <ScrollReveal
+              as="h2"
+              id="events-title"
+              baseOpacity={0.1}
+              enableBlur
+              baseRotation={3}
+              blurStrength={4}
+            >
+              Cada evento, una nueva historia.
+            </ScrollReveal>
+            <ScrollReveal
+              as="p"
+              baseOpacity={0.1}
+              enableBlur
+              baseRotation={3}
+              blurStrength={4}
+            >
+              Una selección de proyectos de fotografía y video en vivo.
+            </ScrollReveal>
           </div>
           <button className="landing-text-link" type="button" onClick={onLogin}>
             Ver álbumes <span aria-hidden="true">→</span>
           </button>
         </div>
-        <div className="landing-event-grid">
-          {featuredEvents.map((event, index) => (
-            <article
-              className="landing-event-card"
-              key={event.title}
-              data-reveal="rise"
-              style={{ '--reveal-delay': `${index * 120}ms` }}
-              onPointerMove={handleCardPointerMove}
-              onPointerLeave={resetPointerEffects}
-            >
-              <button className="landing-event-image" type="button" onClick={onLogin} aria-label={`Explorar: ${event.title}`}>
-                <img src={event.image} alt="" loading="lazy" />
-                <span>0{index + 1}</span>
-              </button>
-              <div className="landing-event-copy">
-                <p className="landing-eyebrow">{event.category}</p>
-                <h3>{event.title}</h3>
-                <p>{event.description}</p>
-                <button className="landing-card-link" type="button" onClick={onLogin}>
-                  Encontrar mis fotos <span aria-hidden="true">↗</span>
-                </button>
-              </div>
-            </article>
-          ))}
-        </div>
+
+        <CircularCarousel
+          items={featuredEvents}
+          onSelect={onLogin}
+        />
       </section>
 
-      <section className="landing-gallery landing-film-section" aria-labelledby="gallery-title">
-        <div className="landing-section">
-          <div className="landing-film-cta-banner" data-reveal="rise">
-            <div className="landing-film-roll" aria-hidden="true">
-              <div className="landing-film-sprockets landing-film-sprockets-top" />
-              <div className="landing-film-viewport">
-                <div className="landing-film-scanner" />
-                <div className="landing-film-track">
-                  {filmStripFrames.map((frame, index) => (
-                    <div
-                      className="landing-film-frame"
-                      key={`${frame.id}-${index}`}
-                      style={{ '--develop-delay': `${(index % 6) * -1.4}s` }}
-                    >
-                      <div className="landing-film-frame-meta">
-                        <span>REVELA 400</span>
-                        <span>◀ {frame.code}</span>
-                      </div>
-                      <div className="landing-film-frame-window">
-                        <img
-                          src={frame.url}
-                          alt={frame.title}
-                          loading="lazy"
-                          onError={(event) => {
-                            const image = event.currentTarget;
-                            if (image.dataset.fallback === 'true') return;
-                            image.dataset.fallback = 'true';
-                            image.src = '/landing/hero-2.jpg';
-                          }}
-                        />
-                        <span className="landing-film-chemical-veil" />
-                      </div>
-                      <div className="landing-film-frame-footer">
-                        <span>{frame.title}</span>
-                        <span>ISO 400 · REVELADO</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="landing-film-sprockets landing-film-sprockets-bottom" />
-            </div>
+      <section className="landing-contact landing-contact-organizer landing-section" id="contacto" aria-labelledby="contact-title" data-reveal="rise">
+        <p className="landing-contact-kicker">
+          <span aria-hidden="true">✦</span> CONTACTO
+        </p>
 
-            <div className="landing-event-cta-card">
-              <div className="landing-event-cta-copy">
-                <h2 id="gallery-title">
-                  ¿Fuiste a un evento? Tus fotos ya<br />
-                  pueden estar acá.
-                </h2>
-              </div>
-              <button
-                className="landing-event-cta-button"
-                type="button"
-                onClick={onRegister || onLogin}
-                onPointerMove={handleMagneticPointerMove}
-                onPointerLeave={resetPointerEffects}
-              >
-                Crear mi cuenta
-              </button>
-            </div>
-          </div>
+        <ScrollReveal
+          as="h2"
+          id="contact-title"
+          containerClassName="landing-contact-organizer-title"
+          baseOpacity={0.1}
+          enableBlur
+          baseRotation={2}
+          blurStrength={4}
+        >
+          ¿ORGANIZÁS UN EVENTO?
+        </ScrollReveal>
+
+        <ScrollReveal
+          as="p"
+          containerClassName="landing-contact-organizer-copy"
+          baseOpacity={0.1}
+          enableBlur
+          baseRotation={2}
+          blurStrength={4}
+        >
+          Creamos y centralizamos coberturas fotográficas y audiovisuales para shows en vivo, celebraciones, bodas, egresos y eventos corporativos, pensadas para capturar la experiencia completa de los asistentes y potenciar la identidad de cada fecha. Desde la planificación y distribución del equipo de fotógrafos hasta la publicación del álbum y la entrega de las fotografías en alta resolución, desarrollamos una propuesta adaptada a cada evento y organización. Vos creás el momento. Nosotros nos encargamos de revelarlo.
+        </ScrollReveal>
+
+        <div className="landing-contact-organizer-actions">
+          <a
+            className="landing-contact-btn landing-contact-btn-whatsapp"
+            href="https://wa.me/5492645029031?text=Hola%20Fede%2C%20quiero%20consultar%20por%20la%20cobertura%20de%20un%20evento"
+            target="_blank"
+            rel="noopener noreferrer"
+            onPointerMove={handleMagneticPointerMove}
+            onPointerLeave={resetPointerEffects}
+          >
+            ESCRIBINOS POR WHATSAPP
+          </a>
+          <a
+            className="landing-contact-btn landing-contact-btn-email"
+            href="mailto:contacto@revela.com?subject=Consulta%20por%20cobertura%20de%20evento"
+            onPointerMove={handleMagneticPointerMove}
+            onPointerLeave={resetPointerEffects}
+          >
+            ENVIAR EMAIL
+          </a>
         </div>
-      </section>
-
-      <section className="landing-contact landing-section" id="contacto" aria-labelledby="contact-title" data-reveal="rise">
-        <button
-          className="landing-contact-mark landing-camera-flash-btn"
-          type="button"
-          aria-label="Disparar flash e ir a Iniciar sesión"
-          title="Click para sacar foto e iniciar sesión"
-          onClick={(event) => triggerCameraFlash(event.currentTarget)}
-        >
-          <BrandCameraLogo />
-        </button>
-        <p className="landing-eyebrow">CADA HISTORIA MERECE SER CONTADA</p>
-        <h2 id="contact-title">Volvé a vivir cada momento.</h2>
-        <p>Ingresá a la galería para encontrar y elegir las fotos de los eventos que compartiste.</p>
-        <button
-          className="landing-button landing-button-primary"
-          type="button"
-          onClick={(event) => {
-            const cameraBtn = event.currentTarget.parentElement?.querySelector('.landing-camera-flash-btn') || event.currentTarget;
-            triggerCameraFlash(cameraBtn);
-          }}
-          onPointerMove={handleMagneticPointerMove}
-          onPointerLeave={resetPointerEffects}
-        >
-          Click en la camarita <span aria-hidden="true">↑</span>
-        </button>
       </section>
     </div>
   );

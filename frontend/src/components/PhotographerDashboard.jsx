@@ -30,6 +30,31 @@ const albumCategories = ['Running', 'Surf', 'Fútbol', 'Carreras', 'Otros'];
 const formatPrice = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const maxImageSize = 10 * 1024 * 1024;
 const imageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const watermarkStampRows = Array.from({ length: 5 }, (_, rowIndex) => rowIndex);
+
+function PhotoWatermarkOverlay({ compact = false }) {
+  return (
+    <div
+      className={`customer-showcase-watermark photographer-photo-watermark${compact ? ' is-compact' : ''}`}
+      aria-hidden="true"
+    >
+      <div className="customer-watermark-pattern">
+        {watermarkStampRows.map((row) => (
+          <div className="customer-watermark-row" key={row}>
+            <span>revela</span>
+            <span>revela</span>
+            <span>revela</span>
+            <span>revela</span>
+          </div>
+        ))}
+      </div>
+      <div className="customer-watermark-center">
+        <span className="customer-watermark-emblem">◎</span>
+        <span className="customer-watermark-brand">revela</span>
+      </div>
+    </div>
+  );
+}
 
 function displayName(username) {
   return username
@@ -264,7 +289,7 @@ export default function PhotographerDashboard({ token, username, isAdmin = false
         }
         await uploadPhoto(token, photoData, image);
       }
-      setMessage(editingId ? 'Foto actualizada.' : 'Foto publicada.');
+      setMessage(editingId ? 'Foto actualizada con marca de agua Revela.' : 'Foto publicada con marca de agua Revela.');
       setDraft(emptyPhoto);
       clearImagePreview();
       setEditingId('');
@@ -464,13 +489,17 @@ export default function PhotographerDashboard({ token, username, isAdmin = false
         <form className="surface photographer-upload-card photo-form" onSubmit={handleSubmit}>
           <label className="photographer-image-picker">
             {previewUrl ? (
-              <img className="photographer-image-preview" src={previewUrl} alt="Vista previa de la fotografía seleccionada" />
+              <span className="photographer-image-preview-wrap">
+                <img className="photographer-image-preview" src={previewUrl} alt="Vista previa de la fotografía seleccionada con marca de agua" draggable={false} />
+                <PhotoWatermarkOverlay compact />
+              </span>
             ) : (
               <span className="photographer-image-placeholder" aria-hidden="true">＋</span>
             )}
             <span className="photographer-image-copy">
               <strong>{image ? image.name : editingId ? 'Elegir otra fotografía' : 'Elegir fotografía'}</strong>
               <span>JPG, PNG, WEBP o GIF · Máximo 10 MB</span>
+              <span className="photographer-watermark-badge">◎ Marca de agua Revela aplicada automáticamente</span>
             </span>
             <input
               type="file"
@@ -478,7 +507,7 @@ export default function PhotographerDashboard({ token, username, isAdmin = false
               onChange={handleImageChange}
             />
           </label>
-          {editingId && !image && <p className="photographer-current-image">La publicación conservará su imagen actual.</p>}
+          {editingId && !image && <p className="photographer-current-image">La publicación conservará su imagen actual con marca de agua Revela.</p>}
           <div className="photo-form">
             <label>
               Título
@@ -534,10 +563,12 @@ export default function PhotographerDashboard({ token, username, isAdmin = false
               const canManage = isAdmin || photo.owner_username === username || photoAlbum?.owner_username === username || photoAlbum?.shared_permission === 'full';
               return (
                 <article className="photographer-gallery-item" key={id}>
-                  <img src={photo.url} alt={photo.title} loading="lazy" />
+                  <img src={photo.url} alt={photo.title} loading="lazy" draggable={false} />
+                  <PhotoWatermarkOverlay />
                   <div className="photographer-photo-overlay">
                     <strong>{photo.title}</strong>
                     <span>{formatPrice.format(photo.price)}{photoAlbum ? ` · ${photoAlbum.name}` : ''}</span>
+                    <span className="photographer-watermark-badge">◎ Con marca de agua Revela</span>
                     {photo.description && <p>{photo.description}</p>}
                     {canManage && (
                       <div className="photo-card-actions">
@@ -603,10 +634,12 @@ export default function PhotographerDashboard({ token, username, isAdmin = false
               const id = photo._id || photo.id;
               return (
                 <article className="photographer-gallery-item" key={id}>
-                  <img src={photo.url} alt={photo.title} loading="lazy" />
+                  <img src={photo.url} alt={photo.title} loading="lazy" draggable={false} />
+                  <PhotoWatermarkOverlay />
                   <div className="photographer-photo-overlay">
                     <strong>{photo.title}</strong>
                     <span>{formatPrice.format(photo.price)}</span>
+                    <span className="photographer-watermark-badge">◎ Con marca de agua Revela</span>
                     {photo.description && <p>{photo.description}</p>}
                     {(isAdmin || photo.owner_username === username || selectedAlbum.owner_username === username || selectedAlbum.shared_permission === 'full') && <div className="photo-card-actions">
                       <button className="button button-quiet button-small" type="button" onClick={() => startEditing(photo)}>Editar</button>
@@ -744,10 +777,12 @@ export default function PhotographerDashboard({ token, username, isAdmin = false
                   const id = photo._id || photo.id;
                   return (
                     <article className="photographer-gallery-item" key={id}>
-                      <img src={photo.url} alt={photo.title} loading="lazy" />
+                      <img src={photo.url} alt={photo.title} loading="lazy" draggable={false} />
+                      <PhotoWatermarkOverlay />
                       <div className="photographer-photo-overlay">
                         <strong>{photo.title}</strong>
                         <span>{formatPrice.format(photo.price)}</span>
+                        <span className="photographer-watermark-badge">◎ Con marca de agua Revela</span>
                         {photo.description && <p>{photo.description}</p>}
                         <div className="photo-card-actions">
                           <button className="button button-quiet button-small" type="button" onClick={() => startEditing(photo)}>Editar</button>
@@ -845,6 +880,10 @@ export default function PhotographerDashboard({ token, username, isAdmin = false
                 <div className="photographer-limit-row">
                   <span>Formatos permitidos</span>
                   <strong>JPG, PNG, WEBP y GIF</strong>
+                </div>
+                <div className="photographer-limit-row">
+                  <span>Protección de contenido</span>
+                  <strong>Marca de agua Revela automática en cada subida</strong>
                 </div>
                 <p className="photographer-setting-note">No hay una cuota de almacenamiento o cantidad de publicaciones configurada en el servidor.</p>
                 <button className="button button-primary" type="button" onClick={() => setSettingsDialog('')}>

@@ -8,5 +8,6 @@ export default mongoose.model("Photo", new mongoose.Schema({
     album_id: { type: mongoose.Schema.Types.ObjectId, ref: "Album", index: true },
     type: { type: String, enum: ["photo", "video"], default: "photo" },
     price: { type: Number, required: true },
+    watermarked: { type: Boolean, default: true },
     available: { type: Boolean, default: true }
 }));

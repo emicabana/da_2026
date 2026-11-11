@@ -97,12 +97,6 @@ export default function AuthPage({
           Ingresá a Revela para encontrar las fotos de tus celebraciones, shows y eventos,
           y volver a vivir cada momento.
         </p>
-        <div className="login-image" role="img" aria-label="Fotografía de un evento en vivo">
-          <div className="login-image-caption">
-            <span>FOTOGRAFÍA · VIDEO · EVENTOS</span>
-            <strong>La esencia de cada momento.</strong>
-          </div>
-        </div>
         <p className="login-footnote"><span aria-hidden="true">✦</span> Cada historia merece ser recordada.</p>
       </div>
 

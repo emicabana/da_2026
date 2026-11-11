@@ -6,6 +6,7 @@ import { createUser, login, registerAccount, getUsers, getAllOrders, updateOrder
 import CustomerDashboard from './components/CustomerDashboard';
 import PhotographerDashboard from './components/PhotographerDashboard';
 import LandingPage from './components/LandingPage';
+import AboutPage from './components/AboutPage';
 import AuthPage from './components/AuthPage';
 import PhotographerTools from './components/PhotographerTools';
 
@@ -43,6 +44,7 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [session, setSession] = useState(null);
   const [showLogin, setShowLogin] = useState(false);
+  const [publicPage, setPublicPage] = useState('landing');
   const [authInitialMode, setAuthInitialMode] = useState('login');
   const [customerView, setCustomerView] = useState('catalog');
   const [photographerView, setPhotographerView] = useState('profile');
@@ -262,6 +264,24 @@ export default function App() {
     }
   }
 
+  function handleGoHome(targetHash) {
+    setShowLogin(false);
+    setPublicPage('landing');
+    setError('');
+    if (typeof targetHash === 'string' && targetHash.startsWith('#')) {
+      window.setTimeout(() => {
+        const el = document.querySelector(targetHash);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 60);
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }
+
   return (
     <MainLayout
       theme={theme}
@@ -273,12 +293,21 @@ export default function App() {
       showPublicNavigation={!session && !showLogin}
       showLogin={!session && showLogin}
       onShowLogin={() => { setAuthInitialMode('login'); setShowLogin(true); setError(''); }}
-      onHome={() => { setShowLogin(false); setError(''); }}
+      onHome={handleGoHome}
+      publicPage={publicPage}
+      onOpenAbout={() => { setShowLogin(false); setPublicPage('about'); setError(''); }}
     >
-      {!session && !showLogin && (
+      {!session && !showLogin && publicPage === 'landing' && (
         <LandingPage
           onLogin={() => { setAuthInitialMode('login'); setShowLogin(true); setError(''); }}
           onRegister={() => { setAuthInitialMode('register'); setShowLogin(true); setError(''); }}
+        />
+      )}
+
+      {!session && !showLogin && publicPage === 'about' && (
+        <AboutPage
+          onBackHome={() => handleGoHome('#inicio')}
+          onOpenAlbums={() => { setAuthInitialMode('login'); setShowLogin(true); setError(''); }}
         />
       )}
 

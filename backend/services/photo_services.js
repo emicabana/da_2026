@@ -83,6 +83,7 @@ export class PhotoService {
             url: data.url,
             type,
             price: album ? (type === "video" ? album.video_price : album.photo_price) : data.price,
+            watermarked: true,
             available: data.available,
             album_id: album?._id,
             owner_username: isAdmin ? data.owner_username || username : username,
@@ -116,6 +117,7 @@ export class PhotoService {
                 .filter((key) => data[key] !== undefined)
                 .map((key) => [key, data[key]])
         );
+        updates.watermarked = true;
         if (data.album_id !== undefined) {
             updates.album_id = album?._id;
             if (album) {

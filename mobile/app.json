@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "MEMORIES",
-    "slug": "memories",
+    "name": "REVELA",
+    "slug": "revela",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -19,6 +19,16 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-status-bar",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "REVELA necesita acceder a tus fotos para publicar imágenes en tus álbumes.",
+          "microphonePermission": false
+        }
+      ]
+    ]
   }
 }

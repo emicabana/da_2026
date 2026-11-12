@@ -1,11 +1,19 @@
 import { useState, createContext, useContext, useCallback, useMemo } from 'react';
+import Constants from 'expo-constants';
 
 // oxlint-disable-next-line react/only-export-components
 export const ApiContext = createContext();
 
+const expoHost = Constants.expoConfig?.hostUri?.match(
+  /^(?:https?:\/\/)?(\d{1,3}(?:\.\d{1,3}){3})(?::\d+)?$/
+)?.[1];
+const defaultApiUrl = expoHost
+  ? `http://${expoHost}:3000/api`
+  : 'http://192.168.100.11:3000/api';
+
 export function ApiProvider({ children }) {
   const [urlBase, setUrlBase] = useState(
-    process.env.EXPO_PUBLIC_API_URL || 'http://192.168.100.11:3000/api'
+    process.env.EXPO_PUBLIC_API_URL || defaultApiUrl
   );
   const [authorization, setAuthorization] = useState('');
 
@@ -27,7 +35,15 @@ export function ApiProvider({ children }) {
       fetchOptions.headers['Authorization'] = authorization;
     }
 
-    const res = await fetch(urlBase.replace(/\/$/, '') + url, fetchOptions);
+    let res;
+    try {
+      res = await fetch(urlBase.replace(/\/$/, '') + url, fetchOptions);
+    } catch (requestError) {
+      const detail = requestError instanceof Error ? ` (${requestError.message})` : '';
+      throw new Error(
+        `No se pudo conectar con el servidor en ${urlBase}. Verificá que el backend esté encendido, que el celular y la computadora estén en la misma red, y que EXPO_PUBLIC_API_URL tenga la IP correcta.${detail}`
+      );
+    }
     const responseText = await res.text();
     const contentType = res.headers.get('content-type') || '';
     const responseBody = contentType.includes('application/json') && responseText

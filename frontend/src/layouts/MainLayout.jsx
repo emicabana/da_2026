@@ -13,6 +13,7 @@ export default function MainLayout({
   showPublicNavigation,
   showLogin,
   onShowLogin,
+  onOpenAlbums,
   onHome,
   publicPage,
   onOpenAbout,
@@ -27,6 +28,7 @@ export default function MainLayout({
         showPublicNavigation={showPublicNavigation}
         showLogin={showLogin}
         onShowLogin={onShowLogin}
+        onOpenAlbums={onOpenAlbums}
         onHome={onHome}
         publicPage={publicPage}
         onOpenAbout={onOpenAbout}

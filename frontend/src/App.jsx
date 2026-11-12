@@ -282,6 +282,14 @@ export default function App() {
     }
   }
 
+  function handleOpenAlbums() {
+    setShowLogin(false);
+    setPublicPage('catalog');
+    setCustomerView('catalog');
+    setError('');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   return (
     <MainLayout
       theme={theme}
@@ -293,6 +301,7 @@ export default function App() {
       showPublicNavigation={!session && !showLogin}
       showLogin={!session && showLogin}
       onShowLogin={() => { setAuthInitialMode('login'); setShowLogin(true); setError(''); }}
+      onOpenAlbums={handleOpenAlbums}
       onHome={handleGoHome}
       publicPage={publicPage}
       onOpenAbout={() => { setShowLogin(false); setPublicPage('about'); setError(''); }}
@@ -301,13 +310,14 @@ export default function App() {
         <LandingPage
           onLogin={() => { setAuthInitialMode('login'); setShowLogin(true); setError(''); }}
           onRegister={() => { setAuthInitialMode('register'); setShowLogin(true); setError(''); }}
+          onOpenAlbums={handleOpenAlbums}
         />
       )}
 
       {!session && !showLogin && publicPage === 'about' && (
         <AboutPage
           onBackHome={() => handleGoHome('#inicio')}
-          onOpenAlbums={() => { setAuthInitialMode('login'); setShowLogin(true); setError(''); }}
+          onOpenAlbums={handleOpenAlbums}
         />
       )}
 
@@ -514,7 +524,21 @@ export default function App() {
       {session?.role === 'photographer' && (photographerView === 'profile' || photographerView === 'photos'
         ? <PhotographerDashboard key={photographerView} token={session.authorizationToken} username={session.username} sectionView={photographerView} onSelectSection={setPhotographerView} />
         : <PhotographerTools token={session.authorizationToken} username={session.username} view={photographerView} onBack={() => setPhotographerView('profile')} />)}
-      {session?.role === 'customer' && <CustomerDashboard token={session.authorizationToken} username={session.username} view={customerView} onViewChange={setCustomerView} />}
+      {(session?.role === 'customer' || (!session && publicPage === 'catalog')) && (
+        <div hidden={!session && showLogin}>
+          <CustomerDashboard
+            token={session?.authorizationToken}
+            username={session?.username || ''}
+            view={session?.role === 'customer' ? customerView : 'catalog'}
+            onViewChange={setCustomerView}
+            onRequireLogin={() => {
+              setAuthInitialMode('login');
+              setShowLogin(true);
+              setError('');
+            }}
+          />
+        </div>
+      )}
     </MainLayout>
   );
 }

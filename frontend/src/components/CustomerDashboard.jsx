@@ -101,7 +101,7 @@ function isPaidOrder(order) {
 
 const watermarkStampRows = Array.from({ length: 5 }, (_, rowIndex) => rowIndex);
 
-export default function CustomerDashboard({ token, username, view, onViewChange }) {
+export default function CustomerDashboard({ token, username, view, onViewChange, onRequireLogin }) {
   const [photos, setPhotos] = useState([]);
   const [albums, setAlbums] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -122,13 +122,15 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
 
   useEffect(() => {
     let active = true;
+    const accountDataRequest = token
+      ? Promise.all([getMyOrders(token), getMyProfile(token).catch(() => null)])
+      : Promise.resolve([[], null]);
     Promise.all([
       getPhotos(),
       getPublicAlbums(),
-      getMyOrders(token),
-      getMyProfile(token).catch(() => null),
+      accountDataRequest,
     ])
-      .then(([catalog, publicAlbums, customerOrders, profileData]) => {
+      .then(([catalog, publicAlbums, [customerOrders, profileData]]) => {
         if (active) {
           const publicAlbumIds = new Set(publicAlbums.map((album) => String(getId(album))));
           setAlbums(publicAlbums);
@@ -138,8 +140,17 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
               : true
           ));
           setOrders(customerOrders);
+          const purchasedIds = new Set(
+            customerOrders
+              .filter(isPaidOrder)
+              .flatMap((order) => order.photos || [])
+              .map((photo) => String(getId(photo)))
+          );
+          setSelectedIds((current) => current.filter((id) => !purchasedIds.has(id)));
           if (profileData?.email) {
             setCustomerEmail(profileData.email);
+          } else if (!token) {
+            setCustomerEmail('');
           }
         }
       })
@@ -269,6 +280,10 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
   }
 
   async function handleCreateOrder() {
+    if (!token) {
+      onRequireLogin?.();
+      return;
+    }
     if (selectedIds.length === 0) return;
     setOrdering(true);
     setError('');
@@ -289,6 +304,15 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
     } finally {
       setOrdering(false);
     }
+  }
+
+  function handleCheckout() {
+    if (selectedIds.length === 0) return;
+    if (!token) {
+      onRequireLogin?.();
+      return;
+    }
+    setCheckoutOpen(true);
   }
 
   const primaryArtistName = selectedAlbumBreakdown[0]?.artistName
@@ -540,16 +564,18 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
       {(!selectedAlbum && view === 'catalog') && (
         <div className="page-heading">
           <div>
-            <p className="eyebrow">GALERÍA / @{username}</p>
+            <p className="eyebrow">{token ? `GALERÍA / @${username}` : 'GALERÍA PÚBLICA'}</p>
             <h1 id="customer-title">Encontrá tu próxima foto</h1>
             <p className="heading-copy">Explorá los álbumes por fotógrafo y reuní tus favoritas.</p>
           </div>
-          <div className="view-switch" role="tablist" aria-label="Secciones de cliente">
-            <button type="button" role="tab" aria-selected={view === 'catalog'} className={view === 'catalog' ? 'is-active' : ''} onClick={() => onViewChange('catalog')}>Explorar álbumes</button>
-            <button type="button" role="tab" aria-selected={view === 'orders'} className={view === 'orders' ? 'is-active' : ''} onClick={() => onViewChange('orders')}>
-              Compras pendientes {cartBadgeCount > 0 ? `(${cartBadgeCount})` : ''}
-            </button>
-          </div>
+          {token && (
+            <div className="view-switch" role="tablist" aria-label="Secciones de cliente">
+              <button type="button" role="tab" aria-selected={view === 'catalog'} className={view === 'catalog' ? 'is-active' : ''} onClick={() => onViewChange('catalog')}>Explorar álbumes</button>
+              <button type="button" role="tab" aria-selected={view === 'orders'} className={view === 'orders' ? 'is-active' : ''} onClick={() => onViewChange('orders')}>
+                Compras pendientes {cartBadgeCount > 0 ? `(${cartBadgeCount})` : ''}
+              </button>
+            </div>
+          )}
         </div>
       )}
 
@@ -588,21 +614,31 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
                     <span aria-hidden="true">←</span> Volver a los álbumes
                   </button>
                   <div className="customer-album-topbar-actions">
-                    <button
-                      className="customer-topbar-cart-btn"
-                      type="button"
-                      onClick={() => onViewChange('orders')}
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-                        <circle cx="9" cy="21" r="1" />
-                        <circle cx="20" cy="21" r="1" />
-                        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
-                      </svg>
-                      <span>Carrito</span>
-                      {cartBadgeCount > 0 && (
-                        <span className="customer-topbar-cart-badge">{cartBadgeCount}</span>
-                      )}
-                    </button>
+                    {token ? (
+                      <button
+                        className="customer-topbar-cart-btn"
+                        type="button"
+                        onClick={() => onViewChange('orders')}
+                      >
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                          <circle cx="9" cy="21" r="1" />
+                          <circle cx="20" cy="21" r="1" />
+                          <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6" />
+                        </svg>
+                        <span>Carrito</span>
+                        {cartBadgeCount > 0 && (
+                          <span className="customer-topbar-cart-badge">{cartBadgeCount}</span>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        className="customer-album-back-pill"
+                        type="button"
+                        onClick={onRequireLogin}
+                      >
+                        Iniciar sesión para comprar
+                      </button>
+                    )}
                     <button
                       className="customer-album-back-pill"
                       type="button"
@@ -709,6 +745,7 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
                       const id = String(getId(photo));
                       const purchased = purchasedPhotoIds.has(id);
                       const selected = selectedIds.includes(id);
+                      const isVideo = photo.type === 'video';
                       const watermarkLabel = 'revela';
                       return (
                         <article
@@ -717,25 +754,36 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
                           role="listitem"
                         >
                           <div
-                            className="customer-showcase-media"
-                            role="button"
-                            tabIndex={0}
-                            aria-label={`Ver vista previa de ${photo.title || 'fotografía'}`}
-                            onClick={() => setPreviewPhotoId(id)}
-                            onKeyDown={(event) => {
+                            className={`customer-showcase-media${isVideo ? ' is-video' : ''}`}
+                            role={isVideo ? undefined : 'button'}
+                            tabIndex={isVideo ? undefined : 0}
+                            aria-label={isVideo ? undefined : `Ver vista previa de ${photo.title || 'fotografía'}`}
+                            onClick={isVideo ? undefined : () => setPreviewPhotoId(id)}
+                            onKeyDown={isVideo ? undefined : (event) => {
                               if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault();
                                 setPreviewPhotoId(id);
                               }
                             }}
                           >
-                            <img
-                              className="customer-showcase-img"
-                              src={photo.url}
-                              alt={photo.title}
-                              loading="lazy"
-                              draggable={false}
-                            />
+                            {isVideo ? (
+                              <video
+                                className="customer-showcase-video"
+                                src={photo.url}
+                                controls
+                                preload="metadata"
+                                playsInline
+                                aria-label={photo.title || 'Video del álbum'}
+                              />
+                            ) : (
+                              <img
+                                className="customer-showcase-img"
+                                src={photo.url}
+                                alt={photo.title}
+                                loading="lazy"
+                                draggable={false}
+                              />
+                            )}
 
                             {!purchased && (
                               <div className="customer-showcase-watermark" aria-hidden="true">
@@ -802,7 +850,7 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
               <button
                 type="button"
                 className="customer-floating-buy-btn"
-                onClick={() => setCheckoutOpen(true)}
+                onClick={handleCheckout}
                 aria-label={`Comprar (${selectedPhotos.length} seleccionadas)`}
               >
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -852,11 +900,22 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
                       )}
 
                       <div className="customer-lightbox-media">
-                        <img
-                          src={previewPhoto.url}
-                          alt={previewPhoto.title}
-                          draggable={false}
-                        />
+                        {previewPhoto.type === 'video' ? (
+                          <video
+                            src={previewPhoto.url}
+                            controls
+                            autoPlay
+                            playsInline
+                            preload="metadata"
+                            aria-label={previewPhoto.title || 'Video del álbum'}
+                          />
+                        ) : (
+                          <img
+                            src={previewPhoto.url}
+                            alt={previewPhoto.title}
+                            draggable={false}
+                          />
+                        )}
                         {!purchasedPhotoIds.has(String(getId(previewPhoto))) && (
                           <div className="customer-showcase-watermark" aria-hidden="true">
                             <div className="customer-watermark-pattern">
@@ -925,7 +984,7 @@ export default function CustomerDashboard({ token, username, view, onViewChange 
                             className="button button-primary"
                             onClick={() => {
                               setPreviewPhotoId('');
-                              setCheckoutOpen(true);
+                              handleCheckout();
                             }}
                           >
                             Revisar compra ({selectedPhotos.length})

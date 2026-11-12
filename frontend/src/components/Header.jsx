@@ -8,6 +8,7 @@ const roleNames = {
 
 const publicLinks = [
   { href: '#inicio', label: 'Inicio' },
+  { href: '#albums', label: 'Álbumes' },
   { href: '#eventos', label: 'Eventos' },
   { href: '#nosotros', label: 'Nosotros' },
   { href: '#contacto', label: 'Contacto' },
@@ -59,6 +60,7 @@ export default function Header({
   showPublicNavigation,
   showLogin,
   onShowLogin,
+  onOpenAlbums,
   onHome,
   publicPage = 'landing',
   onOpenAbout,
@@ -116,6 +118,13 @@ export default function Header({
 
   function handleNavLinkClick(event, href) {
     closeMenu();
+    if (href === '#albums') {
+      event.preventDefault();
+      onOpenAlbums?.();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (href === '#nosotros') {
       event.preventDefault();
       onOpenAbout?.();
@@ -123,7 +132,7 @@ export default function Header({
       return;
     }
 
-    if (publicPage === 'about') {
+    if (publicPage !== 'landing') {
       event.preventDefault();
       onHome?.(href);
       return;
@@ -207,7 +216,8 @@ export default function Header({
                   href={link.href}
                   key={link.href}
                   className={
-                    publicPage === 'about' && link.href === '#nosotros'
+                    (publicPage === 'about' && link.href === '#nosotros')
+                      || (publicPage === 'catalog' && link.href === '#albums')
                       ? 'is-active'
                       : ''
                   }

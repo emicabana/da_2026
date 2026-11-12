@@ -73,7 +73,7 @@ function resetPointerEffects(event) {
   element.style.removeProperty('--spotlight-y');
 }
 
-export default function LandingPage({ onLogin }) {
+export default function LandingPage({ onLogin, onOpenAlbums }) {
   const landingRef = useRef(null);
 
   useEffect(() => {
@@ -142,7 +142,7 @@ export default function LandingPage({ onLogin }) {
             Encontrá tus fotos y videos del casamiento, del egreso o del recital en los álbumes que publican los fotógrafos del evento.
           </ScrollReveal>
           <div className="landing-actions">
-            <button className="landing-button landing-button-primary" type="button" onClick={onLogin} onPointerMove={handleMagneticPointerMove} onPointerLeave={resetPointerEffects}>
+            <button className="landing-button landing-button-primary" type="button" onClick={onOpenAlbums} onPointerMove={handleMagneticPointerMove} onPointerLeave={resetPointerEffects}>
               Buscar mi evento
             </button>
             <button className="landing-button landing-button-outline" type="button" onClick={onLogin} onPointerMove={handleMagneticPointerMove} onPointerLeave={resetPointerEffects}>
@@ -237,14 +237,14 @@ export default function LandingPage({ onLogin }) {
               Una selección de proyectos de fotografía y video en vivo.
             </ScrollReveal>
           </div>
-          <button className="landing-text-link" type="button" onClick={onLogin}>
+          <button className="landing-text-link" type="button" onClick={onOpenAlbums}>
             Ver álbumes <span aria-hidden="true">→</span>
           </button>
         </div>
 
         <CircularCarousel
           items={featuredEvents}
-          onSelect={onLogin}
+          onSelect={onOpenAlbums}
         />
       </section>
 

@@ -12,6 +12,8 @@ import {
   getPhotographerCoupons,
   getPhotographerSales,
   getStudioProfile,
+  getProtectedReceipt,
+  rejectPhotographerSale,
   leavePhotographerCollaboration,
   respondToPhotographerCollaboration,
   updateAlbumOffers,
@@ -24,8 +26,11 @@ import {
 const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const saleStatusLabels = {
   pending: 'Pendiente',
+  receipt_sent: 'Comprobante enviado',
   paid: 'Abonado / pagado',
+  rejected: 'Rechazado',
   delivered: 'Enviado / entregado',
+  cancelled: 'Cancelado',
 };
 const sections = {
   sales: { title: 'Ventas', eyebrow: 'ACTIVIDAD COMERCIAL' },
@@ -333,7 +338,13 @@ export default function PhotographerTools({ token, username, isAdmin = false, vi
 
   async function handleSaleStatusChange(sale, status) {
     await runSave(async () => {
-      await updatePhotographerSaleStatus(token, getId(sale), status);
+      if (status === 'rejected') {
+        const reason = window.prompt('Motivo del rechazo');
+        if (!reason?.trim()) throw new Error('Indicá el motivo del rechazo.');
+        await rejectPhotographerSale(token, getId(sale), reason.trim());
+      } else {
+        await updatePhotographerSaleStatus(token, getId(sale), status);
+      }
       setSales((current) => current.map((item) => String(getId(item)) === String(getId(sale))
         ? { ...item, status }
         : item));
@@ -442,17 +453,44 @@ export default function PhotographerTools({ token, username, isAdmin = false, vi
                               {isAdmin ? (
                                 <span>{saleStatusLabels[sale.status] || saleStatusLabels.pending}</span>
                               ) : (
-                                <select
-                                  className="field photographer-sale-status"
-                                  aria-label={`Estado de la venta ${String(getId(sale)).slice(-8)}`}
-                                  value={sale.status || 'pending'}
-                                  disabled={saving}
-                                  onChange={(event) => handleSaleStatusChange(sale, event.target.value)}
-                                >
-                                  {Object.entries(saleStatusLabels).map(([status, label]) => (
-                                    <option key={status} value={status}>{label}</option>
-                                  ))}
-                                </select>
+                                <div>
+                                  <span className={`order-status status-${sale.status || 'pending'}`}>
+                                    {saleStatusLabels[sale.status] || saleStatusLabels.pending}
+                                  </span>
+                                  {sale.receipt?.hasFile && sale.sales_statuses?.[0]?.photographerId ? null : null}
+                                  {sale.receipt?.hasFile && (
+                                    <button
+                                      type="button"
+                                      className="button button-quiet button-small"
+                                      onClick={async () => {
+                                        try {
+                                          const saleData = sale.sales_statuses?.find((item) => item.photographer_username)
+                                            || sale.sales_statuses?.[0];
+                                          const photographerId = saleData?.photographerId;
+                                          if (!photographerId) throw new Error('No se pudo identificar al comprador o fotógrafo.');
+                                          const { blob } = await getProtectedReceipt(token, getId(sale), photographerId);
+                                          const url = URL.createObjectURL(blob);
+                                          window.open(url, '_blank', 'noopener,noreferrer');
+                                          window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+                                        } catch (receiptError) {
+                                          setFeedback({ view, error: receiptError.message, message: '' });
+                                        }
+                                      }}
+                                    >
+                                      Ver comprobante
+                                    </button>
+                                  )}
+                                  {sale.status === 'receipt_sent' && (
+                                    <div className="photographer-sale-actions">
+                                      <button type="button" className="button button-small" disabled={saving} onClick={() => handleSaleStatusChange(sale, 'paid')}>Abonar</button>
+                                      <button type="button" className="button button-danger button-small" disabled={saving} onClick={() => handleSaleStatusChange(sale, 'rejected')}>Rechazar</button>
+                                    </div>
+                                  )}
+                                  {sale.status === 'paid' && (
+                                    <button type="button" className="button button-quiet button-small" disabled={saving} onClick={() => handleSaleStatusChange(sale, 'delivered')}>Marcar entregado</button>
+                                  )}
+                                  {sale.rejectionReason && <small className="photographer-sales-pending">Motivo: {sale.rejectionReason}</small>}
+                                </div>
                               )}
                             </td>
                           </tr>

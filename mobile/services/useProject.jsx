@@ -34,6 +34,18 @@ export default function useProject() {
       `/photographer/sales/${encodeURIComponent(orderId)}/status`,
       { status },
     ),
+    rejectSale: (orderId, reason) => api.patchJson(
+      `/photographer/sales/${encodeURIComponent(orderId)}/status`,
+      { status: 'rejected', reason },
+    ),
+    submitSaleReceipt: (orderId, photographerId, formData) => api.postForm(
+      `/orders/${encodeURIComponent(orderId)}/photographer/${encodeURIComponent(photographerId)}/receipt`,
+      formData,
+    ),
+    registerSaleWhatsappNotice: (orderId, photographerId) => api.postJson(
+      `/orders/${encodeURIComponent(orderId)}/photographer/${encodeURIComponent(photographerId)}/whatsapp-notice`,
+      {},
+    ),
     getCoupons: () => api.getJson('/photographer/coupons'),
     createCoupon: (coupon) => api.postJson('/photographer/coupons', coupon),
     updateCoupon: (couponId, updates) => api.patchJson(

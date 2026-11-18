@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
-import { createOrder, getMyOrders, getMyProfile, getPhotos, getPublicAlbums } from '../services/api';
+import {
+  createOrder,
+  downloadOriginalPhoto,
+  getMyOrders,
+  getMyProfile,
+  getPhotos,
+  getPublicAlbums,
+  registerSaleWhatsappNotice,
+  submitSaleReceipt,
+} from '../services/api';
 
 const formatPrice = new Intl.NumberFormat('es-AR', {
   style: 'currency',
@@ -15,7 +24,14 @@ const formatArsCode = (value) => {
   })}`;
 };
 
-const statusLabels = { pending: 'Pendiente', paid: 'Pagado', delivered: 'Entregado' };
+const statusLabels = {
+  pending: 'Pendiente',
+  receipt_sent: 'Comprobante enviado',
+  paid: 'Pagado',
+  rejected: 'Rechazado',
+  delivered: 'Entregado',
+  cancelled: 'Cancelado',
+};
 const unassignedAlbumId = '__unassigned__';
 
 const categoryIcons = {
@@ -99,6 +115,24 @@ function isPaidOrder(order) {
   return order.status === 'paid' || order.status === 'delivered';
 }
 
+function getSaleStatus(order, photo) {
+  const username = photo?.owner_username;
+  return (order.sales_statuses || []).find((sale) =>
+    sale.photographer_username === username
+  )?.status || (order.status === 'paid' || order.status === 'delivered' ? order.status : 'pending');
+}
+
+function isPhotoUnlocked(order, photo) {
+  return ['paid', 'delivered'].includes(getSaleStatus(order, photo));
+}
+
+function isOrderCompleted(order) {
+  const sales = order.sales_statuses || [];
+  return sales.length > 0
+    ? sales.every((sale) => ['paid', 'delivered'].includes(sale.status))
+    : isPaidOrder(order);
+}
+
 const watermarkStampRows = Array.from({ length: 5 }, (_, rowIndex) => rowIndex);
 
 export default function CustomerDashboard({ token, username, view, onViewChange, onRequireLogin }) {
@@ -119,6 +153,7 @@ export default function CustomerDashboard({ token, username, view, onViewChange,
   const [ordering, setOrdering] = useState(false);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [paymentFeedback, setPaymentFeedback] = useState('');
 
   useEffect(() => {
     let active = true;
@@ -142,9 +177,9 @@ export default function CustomerDashboard({ token, username, view, onViewChange,
           setOrders(customerOrders);
           const purchasedIds = new Set(
             customerOrders
-              .filter(isPaidOrder)
-              .flatMap((order) => order.photos || [])
-              .map((photo) => String(getId(photo)))
+              .flatMap((order) => (order.photos || [])
+                .filter((photo) => isPhotoUnlocked(order, photo))
+                .map((photo) => String(getId(photo))))
           );
           setSelectedIds((current) => current.filter((id) => !purchasedIds.has(id)));
           if (profileData?.email) {
@@ -176,9 +211,9 @@ export default function CustomerDashboard({ token, username, view, onViewChange,
 
   const purchasedPhotoIds = useMemo(() => new Set(
     orders
-      .filter(isPaidOrder)
-      .flatMap((order) => order.photos || [])
-      .map((photo) => String(getId(photo)))
+      .flatMap((order) => (order.photos || [])
+        .filter((photo) => isPhotoUnlocked(order, photo))
+        .map((photo) => String(getId(photo))))
   ), [orders]);
 
   const unassignedPhotos = photos.filter((photo) => !photo.album_id);
@@ -326,8 +361,8 @@ export default function CustomerDashboard({ token, username, view, onViewChange,
   const albumBackdropUrl = selectedAlbum?.cover_url || albumPhotos[0]?.url || '';
   const albumCategory = selectedAlbum?.category || 'Evento';
   const albumCategoryIcon = categoryIcons[albumCategory] || '📷';
-  const pendingOrders = orders.filter((order) => order.status === 'pending');
-  const completedOrders = orders.filter((order) => order.status !== 'pending');
+  const pendingOrders = orders.filter((order) => !isOrderCompleted(order));
+  const completedOrders = orders.filter(isOrderCompleted);
   const cartBadgeCount = selectedPhotos.length + pendingOrders.length;
 
   // =========================================================================
@@ -1173,9 +1208,84 @@ export default function CustomerDashboard({ token, username, view, onViewChange,
                     </div>
 
                     <div className="customer-pending-actions">
-                      <span className="customer-pending-status-pill">
-                        {statusLabels[order.status] || 'Pendiente de pago'}
-                      </span>
+                      {(order.sales_statuses || []).map((sale) => {
+                        const saleStatus = sale.status || 'pending';
+                        const payment = sale.photographer?.paymentInfo || {};
+                        const whatsapp = String(sale.photographer?.whatsapp || '').replace(/\D/g, '');
+                        const waText = encodeURIComponent(`Hola, te envío el comprobante del pedido ${orderId}. Cantidad de fotos: ${itemCount}. Subtotal: ${formatArsCode(sale.subtotal)}.`);
+                        return (
+                          <div className="customer-sale-card" key={sale.photographerId || sale.photographer_username}>
+                            <strong>@{sale.photographer_username}</strong>
+                            <span className={`order-status status-${saleStatus}`}>{statusLabels[saleStatus] || 'Pendiente'}</span>
+                            {payment.alias || payment.cbu || payment.accountHolder ? (
+                              <small>
+                                {payment.alias ? `Alias: ${payment.alias} · ` : ''}
+                                {payment.cbu ? `CBU/CVU: ${payment.cbu} · ` : ''}
+                                {payment.accountHolder ? `Titular: ${payment.accountHolder} · ` : ''}
+                                {payment.bankName ? `Banco: ${payment.bankName}` : ''}
+                              </small>
+                            ) : null}
+                            {sale.rejectionReason ? <small className="notice notice-error">Rechazado: {sale.rejectionReason}</small> : null}
+                            {['pending', 'rejected'].includes(saleStatus) ? (
+                              <div className="customer-sale-actions">
+                                <label className="button button-quiet button-small">
+                                  Adjuntar comprobante
+                                  <input
+                                    type="file"
+                                    accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                                    hidden
+                                    onChange={async (event) => {
+                                      const file = event.target.files?.[0];
+                                      if (!file) return;
+                                      try {
+                                        await submitSaleReceipt(token, orderId, sale.photographerId, file);
+                                        setPaymentFeedback('Comprobante enviado.');
+                                        setRefreshKey((key) => key + 1);
+                                      } catch (requestError) {
+                                        setPaymentFeedback(requestError.message);
+                                      } finally {
+                                        event.target.value = '';
+                                      }
+                                    }}
+                                  />
+                                </label>
+                                {whatsapp ? (
+                                  <>
+                                    <a className="button button-quiet button-small" href={`https://wa.me/${whatsapp}?text=${waText}`} target="_blank" rel="noreferrer">Enviar por WhatsApp</a>
+                                    <button
+                                      type="button"
+                                      className="button button-small"
+                                      onClick={async () => {
+                                        try {
+                                          await registerSaleWhatsappNotice(token, orderId, sale.photographerId);
+                                          setPaymentFeedback('Aviso de WhatsApp registrado.');
+                                          setRefreshKey((key) => key + 1);
+                                        } catch (requestError) {
+                                          setPaymentFeedback(requestError.message);
+                                        }
+                                      }}
+                                    >
+                                      Ya envié por WhatsApp
+                                    </button>
+                                  </>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </div>
+                        );
+                      })}
+                      {paymentFeedback ? <small role="status">{paymentFeedback}</small> : null}
+                      {(order.events || []).length > 0 ? (
+                        <details className="customer-order-timeline">
+                          <summary>Historial del pedido</summary>
+                          {(order.events || []).map((event, eventIndex) => (
+                            <small key={`${event.createdAt || eventIndex}-${event.type}`}>
+                              {new Date(event.createdAt || Date.now()).toLocaleString('es-AR')} · {event.type}
+                              {event.note ? ` · ${event.note}` : ''}
+                            </small>
+                          ))}
+                        </details>
+                      ) : null}
                     </div>
                   </article>
                 );
@@ -1218,6 +1328,28 @@ export default function CustomerDashboard({ token, username, view, onViewChange,
                         <span className={`order-status status-${order.status}`}>
                           ✓ {statusLabels[order.status] || order.status}
                         </span>
+                        {(order.photos || []).filter((photo) => isPhotoUnlocked(order, photo)).map((photo) => (
+                          <button
+                            type="button"
+                            className="button button-small"
+                            key={String(getId(photo))}
+                            onClick={async () => {
+                              try {
+                                const { blob, fileName } = await downloadOriginalPhoto(token, orderId, getId(photo));
+                                const url = URL.createObjectURL(blob);
+                                const anchor = document.createElement('a');
+                                anchor.href = url;
+                                anchor.download = fileName;
+                                anchor.click();
+                                window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+                              } catch (requestError) {
+                                setPaymentFeedback(requestError.message);
+                              }
+                            }}
+                          >
+                            Descargar original · {photo.title || 'foto'}
+                          </button>
+                        ))}
                       </div>
                     </article>
                   );

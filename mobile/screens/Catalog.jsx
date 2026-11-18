@@ -15,8 +15,13 @@ function itemId(item) {
   return String(item?._id || item?.id || '');
 }
 
-function isPaidOrder(order) {
-  return order?.status === 'paid' || order?.status === 'delivered';
+function isPhotoUnlocked(order, photo) {
+  const sale = (order?.sales_statuses || []).find((item) =>
+    item.photographer_username === photo?.owner_username
+  );
+  return ['paid', 'delivered'].includes(
+    sale?.status || (order?.status === 'paid' || order?.status === 'delivered' ? order.status : 'pending')
+  );
 }
 
 export default function Catalog() {
@@ -58,9 +63,9 @@ export default function Catalog() {
 
   const purchasedPhotoIds = useMemo(() => new Set(
     orders
-      .filter(isPaidOrder)
-      .flatMap((order) => order.photos || [])
-      .map((photo) => itemId(photo))
+      .flatMap((order) => (order.photos || [])
+        .filter((photo) => isPhotoUnlocked(order, photo))
+        .map((photo) => itemId(photo)))
   ), [orders]);
 
   const visiblePhotos = useMemo(() => photos.filter((photo) => (

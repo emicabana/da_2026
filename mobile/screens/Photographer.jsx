@@ -11,8 +11,11 @@ import styles from '../style';
 const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
 const saleStatusLabels = {
   pending: 'Pendiente',
+  receipt_sent: 'Comprobante enviado',
   paid: 'Abonado / pagado',
+  rejected: 'Rechazado',
   delivered: 'Enviado / entregado',
+  cancelled: 'Cancelado',
 };
 const today = new Date().toISOString().slice(0, 10);
 const emptyAlbum = { name: '', date: today, category: '', description: '' };
@@ -120,6 +123,8 @@ export default function Photographer({ route }) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [updatingSaleId, setUpdatingSaleId] = useState('');
+  const [rejectingSaleId, setRejectingSaleId] = useState('');
+  const [rejectionReason, setRejectionReason] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [cover, setCover] = useState(null);
@@ -196,6 +201,11 @@ export default function Photographer({ route }) {
 
   async function updateSaleStatus(order, status) {
     const orderId = idOf(order);
+    if (status === 'rejected') {
+      setRejectingSaleId(orderId);
+      setRejectionReason('');
+      return;
+    }
     setUpdatingSaleId(orderId);
     setError('');
     setMessage('');
@@ -205,6 +215,30 @@ export default function Photographer({ route }) {
       setMessage('Se actualizó el estado de la venta.');
     } catch (updateError) {
       setError(updateError instanceof Error ? updateError.message : 'No se pudo actualizar la venta.');
+    } finally {
+      setUpdatingSaleId('');
+    }
+  }
+
+  async function confirmRejectSale(order) {
+    const orderId = idOf(order);
+    if (!rejectionReason.trim()) {
+      setError('Indicá el motivo del rechazo.');
+      return;
+    }
+    setUpdatingSaleId(orderId);
+    setError('');
+    setMessage('');
+    try {
+      await project.rejectSale(orderId, rejectionReason.trim());
+      setData((current) => current.map((sale) => idOf(sale) === orderId
+        ? { ...sale, status: 'rejected', rejectionReason: rejectionReason.trim() }
+        : sale));
+      setMessage('Comprobante rechazado.');
+      setRejectingSaleId('');
+      setRejectionReason('');
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : 'No se pudo rechazar la venta.');
     } finally {
       setUpdatingSaleId('');
     }
@@ -545,19 +579,46 @@ export default function Photographer({ route }) {
                 <Text style={styles.bodyText}>Cliente: {order.customer?.display_name || order.username || '—'}</Text>
                 <Text style={styles.bodyText}>Total asociado: {money.format(Number(order.total) || 0)}</Text>
                 <Text style={styles.mutedText}>Estado: {saleStatusLabels[order.status] || saleStatusLabels.pending} · {Array.isArray(order.photos) ? order.photos.length : 0} fotos</Text>
+                {order.sales_statuses?.[0]?.receipt?.hasFile || order.sales_statuses?.[0]?.receipt?.sentViaWhatsapp ? (
+                  <Text style={styles.mutedText}>
+                    {order.sales_statuses[0].receipt.hasFile ? 'Comprobante adjunto' : 'Aviso por WhatsApp recibido'}
+                  </Text>
+                ) : null}
+                {order.sales_statuses?.[0]?.rejectionReason ? (
+                  <Text style={styles.errorText}>Motivo: {order.sales_statuses[0].rejectionReason}</Text>
+                ) : null}
                 {section === 'PhotographerSales' && role === 'photographer' ? (
-                  <View style={[styles.row, { marginTop: 8 }]}>
-                    {Object.entries(saleStatusLabels).map(([status, label]) => (
-                      <View key={status} style={styles.flex}>
-                        <Button
-                          label={label}
-                          variant={order.status === status ? undefined : 'secondary'}
-                          disabled={updatingSaleId === idOf(order) || order.status === status}
-                          onPress={() => updateSaleStatus(order, status)}
-                        />
+                  <>
+                    {order.status === 'receipt_sent' ? (
+                      <View style={[styles.row, { marginTop: 8 }]}>
+                        <View style={styles.flex}>
+                          <Button label="Abonar" disabled={updatingSaleId === idOf(order)} onPress={() => updateSaleStatus(order, 'paid')} />
+                        </View>
+                        <View style={styles.flex}>
+                          <Button label="Rechazar" variant="danger" disabled={updatingSaleId === idOf(order)} onPress={() => updateSaleStatus(order, 'rejected')} />
+                        </View>
                       </View>
-                    ))}
-                  </View>
+                    ) : null}
+                    {order.status === 'paid' ? (
+                      <Button label="Marcar entregado" variant="secondary" disabled={updatingSaleId === idOf(order)} onPress={() => updateSaleStatus(order, 'delivered')} />
+                    ) : null}
+                    {rejectingSaleId === idOf(order) ? (
+                      <View style={{ marginTop: 8 }}>
+                        <LabeledInput label="Motivo del rechazo" value={rejectionReason} onChangeText={setRejectionReason} multiline maxLength={1000} />
+                        <View style={styles.row}>
+                          <View style={styles.flex}><Button label="Confirmar rechazo" variant="danger" disabled={updatingSaleId === idOf(order)} onPress={() => confirmRejectSale(order)} /></View>
+                          <View style={styles.flex}><Button label="Cancelar" variant="secondary" onPress={() => { setRejectingSaleId(''); setRejectionReason(''); }} /></View>
+                        </View>
+                      </View>
+                    ) : null}
+                    {Array.isArray(order.events) ? (
+                      order.events.map((event, eventIndex) => (
+                        <Text key={`${event.createdAt || eventIndex}-${event.type}`} style={styles.mutedText}>
+                          {event.createdAt ? new Date(event.createdAt).toLocaleString('es-AR') : ''} · {event.type}{event.note ? ` · ${event.note}` : ''}
+                        </Text>
+                      ))
+                    ) : null}
+                  </>
                 ) : null}
               </View>
             ))}

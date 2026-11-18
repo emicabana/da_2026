@@ -212,6 +212,58 @@ export function updatePhotographerSaleStatus(token, orderId, status) {
   });
 }
 
+export function rejectPhotographerSale(token, orderId, reason) {
+  return photographerRequest(token, `sales/${encodeURIComponent(orderId)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: 'rejected', reason }),
+  });
+}
+
+export function submitSaleReceipt(token, orderId, photographerId, receipt) {
+  const body = new FormData();
+  body.append('receipt', receipt);
+  return request(`/orders/${encodeURIComponent(orderId)}/photographer/${encodeURIComponent(photographerId)}/receipt`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body,
+  });
+}
+
+export function registerSaleWhatsappNotice(token, orderId, photographerId) {
+  return request(`/orders/${encodeURIComponent(orderId)}/photographer/${encodeURIComponent(photographerId)}/whatsapp-notice`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+}
+
+export async function getProtectedReceipt(token, orderId, photographerId) {
+  const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/photographer/${encodeURIComponent(photographerId)}/receipt`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error || 'No se pudo abrir el comprobante.');
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('content-disposition') || '';
+  const fileName = disposition.match(/filename="([^"]+)"/)?.[1] || 'comprobante';
+  return { blob, fileName };
+}
+
+export async function downloadOriginalPhoto(token, orderId, photoId) {
+  const response = await fetch(`/api/orders/${encodeURIComponent(orderId)}/photos/${encodeURIComponent(photoId)}/download`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) {
+    const data = await response.json().catch(() => null);
+    throw new Error(data?.error || 'No se pudo descargar el original.');
+  }
+  const blob = await response.blob();
+  const disposition = response.headers.get('content-disposition') || '';
+  const fileName = disposition.match(/filename="([^"]+)"/)?.[1] || `original-${photoId}`;
+  return { blob, fileName };
+}
+
 export function getPhotographerCoupons(token) {
   return photographerRequest(token, 'coupons');
 }

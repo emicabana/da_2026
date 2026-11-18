@@ -1,10 +1,14 @@
-@authorizationToken = 
-@photoId = 
-@orderId = 
+@customerToken =
+@photographerToken =
+@adminToken =
+@photoId =
+@orderId =
+@photographerId =
 
-### POST - Crear pedido (usuario logueado)
+### POST - Crear pedido (cliente)
+### Copiá orderId y photographerId de la respuesta para los demás requests.
 POST http://localhost:3000/api/orders
-Authorization: Bearer {{authorizationToken}}
+Authorization: Bearer {{customerToken}}
 Content-Type: application/json
 
 {
@@ -13,27 +17,101 @@ Content-Type: application/json
 
 ###
 
-### GET - Ver mis pedidos
+### GET - Ver mis pedidos (cliente; incluye estados, pagos e historial)
 GET http://localhost:3000/api/orders/mine
-Authorization: Bearer {{authorizationToken}}
+Authorization: Bearer {{customerToken}}
 
 ###
 
-### GET - Ver un pedido por id
+### POST - Adjuntar comprobante (cliente; máximo 5 MB)
+### Reemplazá ./receipt.png por un JPG, PNG, WEBP o PDF válido.
+POST http://localhost:3000/api/orders/{{orderId}}/photographer/{{photographerId}}/receipt
+Authorization: Bearer {{customerToken}}
+Content-Type: multipart/form-data; boundary=RevelaReceiptBoundary
+
+--RevelaReceiptBoundary
+Content-Disposition: form-data; name="receipt"; filename="receipt.png"
+Content-Type: image/png
+
+< ./receipt.png
+--RevelaReceiptBoundary--
+
+###
+
+### Alternativa al upload: cliente avisando que envió el comprobante por WhatsApp
+### Usar con una sub-venta pendiente o rechazada, no después del upload anterior.
+POST http://localhost:3000/api/orders/{{orderId}}/photographer/{{photographerId}}/whatsapp-notice
+Authorization: Bearer {{customerToken}}
+
+###
+
+### GET - Ver/descargar comprobante (cliente dueño, fotógrafo destinatario o admin)
+GET http://localhost:3000/api/orders/{{orderId}}/photographer/{{photographerId}}/receipt
+Authorization: Bearer {{customerToken}}
+
+###
+
+### PATCH - Marcar la sub-venta como abonada (fotógrafo dueño; requiere receipt_sent)
+PATCH http://localhost:3000/api/photographer/sales/{{orderId}}/status
+Authorization: Bearer {{photographerToken}}
+Content-Type: application/json
+
+{
+    "status": "paid"
+}
+
+###
+
+### PATCH - Marcar la sub-venta como entregada (requiere paid)
+PATCH http://localhost:3000/api/photographer/sales/{{orderId}}/status
+Authorization: Bearer {{photographerToken}}
+Content-Type: application/json
+
+{
+    "status": "delivered"
+}
+
+###
+
+### GET - Descargar original (cliente dueño o admin; sub-venta paid/delivered)
+GET http://localhost:3000/api/orders/{{orderId}}/photos/{{photoId}}/download
+Authorization: Bearer {{customerToken}}
+
+###
+
+### PATCH - Rechazar comprobante (fotógrafo; usar otro pedido en estado receipt_sent)
+PATCH http://localhost:3000/api/photographer/sales/{{orderId}}/status
+Authorization: Bearer {{photographerToken}}
+Content-Type: application/json
+
+{
+    "status": "rejected",
+    "reason": "El comprobante no permite verificar el importe."
+}
+
+###
+
+### PATCH - Cancelar sub-venta antes del pago (solo admin; usar un pedido pendiente)
+PATCH http://localhost:3000/api/photographer/sales/{{orderId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{
+    "status": "cancelled",
+    "photographerId": "{{photographerId}}"
+}
+
+###
+
+### GET - Consultar un pedido (cliente dueño o admin)
 GET http://localhost:3000/api/orders/{{orderId}}
-Authorization: Bearer {{authorizationToken}}
+Authorization: Bearer {{customerToken}}
 
 ###
 
-### GET - Ver todos los pedidos (solo admin)
-GET http://localhost:3000/api/orders
-Authorization: Bearer {{authorizationToken}}
-
-###
-
-### PATCH - Actualizar estado (solo admin)
+### PATCH - Actualizar estado global heredado del pedido (solo admin; no habilita originales)
 PATCH http://localhost:3000/api/orders/{{orderId}}/status
-Authorization: Bearer {{authorizationToken}}
+Authorization: Bearer {{adminToken}}
 Content-Type: application/json
 
 {

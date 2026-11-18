@@ -9,6 +9,11 @@ import useProject from '../services/useProject';
 import styles from '../style';
 
 const money = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const saleStatusLabels = {
+  pending: 'Pendiente',
+  paid: 'Abonado / pagado',
+  delivered: 'Enviado / entregado',
+};
 const today = new Date().toISOString().slice(0, 10);
 const emptyAlbum = { name: '', date: today, category: '', description: '' };
 const emptyPhoto = { title: '', description: '', price: '0', album_id: '' };
@@ -114,6 +119,7 @@ export default function Photographer({ route }) {
   const [incoming, setIncoming] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [updatingSaleId, setUpdatingSaleId] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [cover, setCover] = useState(null);
@@ -180,10 +186,27 @@ export default function Photographer({ route }) {
           instagram: result.instagram || '',
         });
       }
+
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'No se pudo cargar esta sección.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function updateSaleStatus(order, status) {
+    const orderId = idOf(order);
+    setUpdatingSaleId(orderId);
+    setError('');
+    setMessage('');
+    try {
+      await project.updateSaleStatus(orderId, status);
+      setData((current) => current.map((sale) => idOf(sale) === orderId ? { ...sale, status } : sale));
+      setMessage('Se actualizó el estado de la venta.');
+    } catch (updateError) {
+      setError(updateError instanceof Error ? updateError.message : 'No se pudo actualizar la venta.');
+    } finally {
+      setUpdatingSaleId('');
     }
   }
 
@@ -521,7 +544,21 @@ export default function Photographer({ route }) {
                 <Text style={styles.buttonText}>Pedido {idOf(order).slice(-8)}</Text>
                 <Text style={styles.bodyText}>Cliente: {order.customer?.display_name || order.username || '—'}</Text>
                 <Text style={styles.bodyText}>Total asociado: {money.format(Number(order.total) || 0)}</Text>
-                <Text style={styles.mutedText}>Estado: {order.status || 'Pendiente'} · {Array.isArray(order.photos) ? order.photos.length : 0} fotos</Text>
+                <Text style={styles.mutedText}>Estado: {saleStatusLabels[order.status] || saleStatusLabels.pending} · {Array.isArray(order.photos) ? order.photos.length : 0} fotos</Text>
+                {section === 'PhotographerSales' && role === 'photographer' ? (
+                  <View style={[styles.row, { marginTop: 8 }]}>
+                    {Object.entries(saleStatusLabels).map(([status, label]) => (
+                      <View key={status} style={styles.flex}>
+                        <Button
+                          label={label}
+                          variant={order.status === status ? undefined : 'secondary'}
+                          disabled={updatingSaleId === idOf(order) || order.status === status}
+                          onPress={() => updateSaleStatus(order, status)}
+                        />
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
               </View>
             ))}
           </>

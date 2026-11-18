@@ -30,6 +30,10 @@ export default function useProject() {
       { status },
     ),
     getSales: () => api.getJson('/photographer/sales'),
+    updateSaleStatus: (orderId, status) => api.patchJson(
+      `/photographer/sales/${encodeURIComponent(orderId)}/status`,
+      { status },
+    ),
     getCoupons: () => api.getJson('/photographer/coupons'),
     createCoupon: (coupon) => api.postJson('/photographer/coupons', coupon),
     updateCoupon: (couponId, updates) => api.patchJson(

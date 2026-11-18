@@ -1,7 +1,7 @@
 import { getDependency } from "../dependency.js";
 import checkRoleMiddleware from "../middlewares/check_role_middleware.js";
-import uploadPhoto from "../middlewares/photo_upload_middleware.js";
-import { removeStoredPhoto } from "../services/photo_storage.js";
+import uploadPhotoImage from "../middlewares/photo_image_upload_middleware.js";
+import { removeOriginalPhoto, removeStoredPhoto, savePhotoImage } from "../services/photo_storage.js";
 
 export function configurePhotoRouter(router) {
     const photoService = getDependency("photoService");
@@ -36,59 +36,76 @@ export function configurePhotoRouter(router) {
         } catch (err) { next(err); }
     });
 
-    router.post("/photos/upload", checkRoleMiddleware(["admin", "photographer"]), uploadPhoto.single("image"), async (req, res, next) => {
+    router.post("/photos/upload", checkRoleMiddleware(["admin", "photographer"]), uploadPhotoImage, async (req, res, next) => {
+        let media;
         try {
             if (!req.file)
                 throw Object.assign(new Error("Seleccioná una imagen para publicar"), { status: 400 });
+            if (req.body.type === "video")
+                throw Object.assign(new Error("Este endpoint acepta únicamente imágenes."), { status: 400 });
 
+            media = await savePhotoImage(req.file);
             const photo = await photoService.create(
-                { ...req.body, url: `/uploads/${req.file.filename}` },
+                req.body,
                 req.session.username,
-                req.session.role === "admin"
+                req.session.role === "admin",
+                media
             );
             res.status(201).json(photo);
         } catch (err) {
-            if (req.file) {
-                try {
-                    await removeStoredPhoto(`/uploads/${req.file.filename}`);
-                } catch (cleanupError) {
-                    console.error("No se pudo limpiar una imagen que no llegó a publicarse:", cleanupError);
+            if (media) {
+                const cleanupResults = await Promise.allSettled([
+                    removeStoredPhoto(media.url),
+                    removeOriginalPhoto(media.original_file_path),
+                ]);
+                for (const result of cleanupResults) {
+                    if (result.status === "rejected")
+                        console.error("No se pudo limpiar una imagen que no llegó a publicarse:", result.reason);
                 }
             }
+            if (res.headersSent) return;
             next(err);
         }
     });
 
-    router.patch("/photos/:id", checkRoleMiddleware(["admin", "photographer"]), uploadPhoto.single("image"), async (req, res, next) => {
+    router.patch("/photos/:id", checkRoleMiddleware(["admin", "photographer"]), uploadPhotoImage, async (req, res, next) => {
         let previousPhoto;
+        let media;
         try {
             if (req.file)
-                previousPhoto = await photoService.getById(req.params.id);
+                previousPhoto = await photoService.getById(req.params.id, true);
+            if (req.file)
+                media = await savePhotoImage(req.file);
             const photo = await photoService.update(
                 req.params.id,
-                {
-                    ...req.body,
-                    ...(req.file ? { url: `/uploads/${req.file.filename}` } : {}),
-                },
+                req.body,
                 req.session.username,
-                req.session.role === "admin"
+                req.session.role === "admin",
+                media
             );
             res.json(photo);
-            if (req.file && previousPhoto?.url !== photo.url) {
+            if (media && previousPhoto) {
                 try {
-                    await removeStoredPhoto(previousPhoto?.url);
+                    await Promise.all([
+                        removeStoredPhoto(previousPhoto.url),
+                        removeOriginalPhoto(previousPhoto.original_file_path),
+                    ]);
                 } catch (cleanupError) {
-                    console.error("No se pudo eliminar la imagen anterior:", cleanupError);
+                    console.error("No se pudieron eliminar los archivos anteriores de la foto:", cleanupError);
                 }
             }
         } catch (err) {
-            if (req.file) {
+            if (media) {
                 try {
-                    await removeStoredPhoto(`/uploads/${req.file.filename}`);
+                    await Promise.all([
+                        removeStoredPhoto(media.url),
+                        removeOriginalPhoto(media.original_file_path),
+                    ]);
                 } catch (cleanupError) {
-                    console.error("No se pudo limpiar una imagen que no llegó a guardarse:", cleanupError);
+                    console.error("No se pudieron limpiar los archivos de una imagen no guardada:", cleanupError);
                 }
             }
+            if (res.headersSent) return;
             next(err);
         }
     });
@@ -101,9 +118,12 @@ export function configurePhotoRouter(router) {
                 req.session.role === "admin"
             );
             try {
-                await removeStoredPhoto(photo.url);
+                await Promise.all([
+                    removeStoredPhoto(photo.url),
+                    removeOriginalPhoto(photo.original_file_path),
+                ]);
             } catch (cleanupError) {
-                console.error("No se pudo eliminar el archivo de una foto borrada:", cleanupError);
+                console.error("No se pudieron eliminar los archivos de una foto borrada:", cleanupError);
             }
             res.status(204).send();
         } catch (err) { next(err); }

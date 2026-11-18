@@ -12,49 +12,30 @@ GET http://localhost:3000/api/photos/{{photoId}}
 
 @photoId = 
 
-### POST - Subir foto (solo admin)
-### Foto 1
-POST http://localhost:3000/api/photos
+### POST - Subir imagen (solo admin o fotógrafo)
+### Reemplazá ./sample.jpg por la ruta de una imagen local válida.
+POST http://localhost:3000/api/photos/upload
 Authorization: Bearer {{authorizationToken}}
-Content-Type: application/json
+Content-Type: multipart/form-data; boundary=RevelaBoundary
 
-{
-    "title": "Egresados 2024 - Grupo 1",
-    "description": "Foto grupal del baile de egresados",
-    "url": "https://images.unsplash.com/photo-1523580494863-6f3031224c94",
-    "type": "photo",
-    "price": 1500
-}
+--RevelaBoundary
+Content-Disposition: form-data; name="title"
 
-###
+Egresados 2024 - Grupo 1
+--RevelaBoundary
+Content-Disposition: form-data; name="description"
 
-### Foto 2
-POST http://localhost:3000/api/photos
-Authorization: Bearer {{authorizationToken}}
-Content-Type: application/json
+Foto grupal del baile de egresados
+--RevelaBoundary
+Content-Disposition: form-data; name="price"
 
-{
-    "title": "Egresados 2024 - Pareja 1",
-    "description": "Foto de pareja en el baile",
-    "url": "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92",
-    "type": "photo",
-    "price": 1200
-}
+1500
+--RevelaBoundary
+Content-Disposition: form-data; name="image"; filename="sample.jpg"
+Content-Type: image/jpeg
 
-###
-
-### Foto 3
-POST http://localhost:3000/api/photos
-Authorization: Bearer {{authorizationToken}}
-Content-Type: application/json
-
-{
-    "title": "Video - Vals de egresados",
-    "description": "Video del vals principal",
-    "url": "https://www.example.com/video1.mp4",
-    "type": "video",
-    "price": 3000
-}
+< ./sample.jpg
+--RevelaBoundary--
 ###
 
 ### PATCH - Modificar foto (solo admin)

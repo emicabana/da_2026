@@ -1,12 +1,12 @@
 import express from "express";
 import mongoose from "mongoose";
-import { uploadsDirectory } from "./services/photo_storage.js";
 import config from "./config.js";
 import "./dependencies.js";
 import { createRouter } from "./api/router.js";
 import errorMiddleware from "./middlewares/error_middleware.js";
 import checkAutorizationTokenMiddleware from "./middlewares/check_authorization_token_middleware.js";
 import logMiddleware from "./middlewares/log_middleware.js";
+import { albumCoversDirectory, publicPreviewsDirectory } from "./services/photo_storage.js";
 
 
 const app = express();
@@ -22,7 +22,8 @@ app.use((req, res, next) => {
     next();
 });
 app.use(express.json());
-app.use("/uploads", express.static(uploadsDirectory, { fallthrough: false, maxAge: "1d" }));
+app.use("/uploads/previews", express.static(publicPreviewsDirectory, { fallthrough: false, maxAge: "1d" }));
+app.use("/uploads/covers", express.static(albumCoversDirectory, { fallthrough: false, maxAge: "1d" }));
 app.use(checkAutorizationTokenMiddleware);
 app.use(logMiddleware);
 

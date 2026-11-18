@@ -1,7 +1,7 @@
 import { getDependency } from "../dependency.js";
 import checkRoleMiddleware from "../middlewares/check_role_middleware.js";
 import uploadPhoto from "../middlewares/photo_upload_middleware.js";
-import { removeStoredPhoto } from "../services/photo_storage.js";
+import { removeOriginalPhoto, removeStoredPhoto } from "../services/photo_storage.js";
 
 export function configureAlbumRouter(router) {
     const albumService = getDependency("albumService");
@@ -33,9 +33,12 @@ export function configureAlbumRouter(router) {
             );
             for (const photo of photos) {
                 try {
-                    await removeStoredPhoto(photo.url);
+                    await Promise.all([
+                        removeStoredPhoto(photo.url),
+                        removeOriginalPhoto(photo.original_file_path),
+                    ]);
                 } catch (cleanupError) {
-                    console.error("No se pudo eliminar el archivo de una foto del álbum borrado:", cleanupError);
+                    console.error("No se pudieron eliminar los archivos de una foto del álbum borrado:", cleanupError);
                 }
             }
             try {
@@ -56,13 +59,13 @@ export function configureAlbumRouter(router) {
             const album = await albumService.create(
                 req.body,
                 req.session.username,
-                `/uploads/${req.file.filename}`
+                `/uploads/covers/${req.file.filename}`
             );
             res.status(201).json(album);
         } catch (err) {
             if (req.file) {
                 try {
-                    await removeStoredPhoto(`/uploads/${req.file.filename}`);
+                    await removeStoredPhoto(`/uploads/covers/${req.file.filename}`);
                 } catch (cleanupError) {
                     console.error("No se pudo limpiar la portada de un álbum no creado:", cleanupError);
                 }

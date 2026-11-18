@@ -1,6 +1,6 @@
 import multer from "multer";
 import { randomUUID } from "node:crypto";
-import { uploadsDirectory } from "../services/photo_storage.js";
+import { albumCoversDirectory } from "../services/photo_storage.js";
 
 const imageTypes = new Map([
     ["image/jpeg", ".jpg"],
@@ -10,7 +10,7 @@ const imageTypes = new Map([
 ]);
 
 const storage = multer.diskStorage({
-    destination: uploadsDirectory,
+    destination: albumCoversDirectory,
     filename(req, file, callback) {
         callback(null, `${randomUUID()}${imageTypes.get(file.mimetype)}`);
     },

@@ -16,6 +16,19 @@ export function configurePhotographerToolsRouter(router) {
             ));
         } catch (err) { next(err); }
     });
+    router.patch("/photographer/sales/:id/status", checkRoleMiddleware(["admin", "photographer"]), async (req, res, next) => {
+        try {
+            res.json(await orderService.updatePhotographerSaleStatus(
+                req.params.id,
+                req.session.username,
+                req.body?.status,
+                req.body?.reason,
+                req.session.role,
+                req.body?.photographerId,
+                req.body?.photographer_username
+            ));
+        } catch (err) { next(err); }
+    });
 
     router.get("/photographer/coupons", adminOrPhotographer, async (req, res, next) => {
         try {

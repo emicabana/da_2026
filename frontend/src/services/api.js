@@ -205,6 +205,13 @@ export function getPhotographerSales(token) {
   return photographerRequest(token, 'sales');
 }
 
+export function updatePhotographerSaleStatus(token, orderId, status) {
+  return photographerRequest(token, `sales/${encodeURIComponent(orderId)}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  });
+}
+
 export function getPhotographerCoupons(token) {
   return photographerRequest(token, 'coupons');
 }

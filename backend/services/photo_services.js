@@ -8,12 +8,22 @@ export class PhotoService {
     }
 
     async getList() {
-        return await this.photoRepo.find({ available: true });
+        return await this.photoRepo.find({
+            available: true,
+            $or: [
+                { type: "video" },
+                { type: "photo", preview_protected: true },
+            ],
+        });
     }
 
-    async getById(id) {
-        const photo = await this.photoRepo.findById(id);
-        if (!photo)
+    async getById(id, includeOriginal = false) {
+        const query = this.photoRepo.findById(id);
+        const photo = await (includeOriginal ? query.select("+original_file_path") : query);
+        if (!photo || (!includeOriginal && (
+            photo.available === false
+            || (photo.type === "photo" && !photo.preview_protected)
+        )))
             throw Object.assign(new Error("Foto no encontrada"), { status: 404 });
         return photo;
     }
@@ -22,6 +32,10 @@ export class PhotoService {
         return this.photoRepo.find({
             album_id: albumId,
             available: true,
+            $or: [
+                { type: "video" },
+                { type: "photo", preview_protected: true },
+            ],
         });
     }
 
@@ -67,33 +81,46 @@ export class PhotoService {
         return Boolean(fullAccess);
     }
 
-    async create(data, username, isAdmin = false) {
+    async create(data, username, isAdmin = false, media = null) {
         if (!data.title)
             throw Object.assign(new Error("El título es obligatorio"), { status: 400 });
-        if (!data.url)
+        const type = data.type || "photo";
+        if (type === "video" && media)
+            throw Object.assign(new Error("Los videos deben publicarse mediante una URL, no como imagen."), { status: 400 });
+        if (type === "photo" && !media)
+            throw Object.assign(new Error("Las fotografías deben cargarse como archivo para generar un original privado y un preview protegido."), { status: 400 });
+        const url = type === "photo" ? media?.url : data.url;
+        if (!url)
             throw Object.assign(new Error("La URL es obligatoria"), { status: 400 });
         if (!data.price && data.price !== 0)
             throw Object.assign(new Error("El precio es obligatorio"), { status: 400 });
 
         const album = await this.validateAlbum(data.album_id, username, isAdmin);
-        const type = data.type || "photo";
         return await this.photoRepo.create({
             title: data.title,
             description: data.description,
-            url: data.url,
+            url,
+            original_file_path: media?.original_file_path || null,
             type,
             price: album ? (type === "video" ? album.video_price : album.photo_price) : data.price,
-            watermarked: true,
+            watermarked: type === "photo",
+            preview_protected: type === "photo",
             available: data.available,
             album_id: album?._id,
             owner_username: isAdmin ? data.owner_username || username : username,
         });
     }
 
-    async update(id, data, username, isAdmin = false) {
-        const existingPhoto = await this.photoRepo.findById(id);
+    async update(id, data, username, isAdmin = false, media = null) {
+        const existingPhoto = await this.photoRepo.findById(id).select("+original_file_path");
         if (!existingPhoto)
             throw Object.assign(new Error("Foto no encontrada"), { status: 404 });
+        if (data.url !== undefined && !media && existingPhoto.type !== "video")
+            throw Object.assign(new Error("Las fotografías deben cargarse como archivo para mantener el original privado."), { status: 400 });
+        if (data.type !== undefined && data.type !== existingPhoto.type && !media)
+            throw Object.assign(new Error("Cargá nuevamente el archivo para cambiar el tipo de contenido."), { status: 400 });
+        if (media && data.type === "video")
+            throw Object.assign(new Error("Los videos deben publicarse mediante una URL, no como imagen."), { status: 400 });
         let managerAlbum = null;
         if (!isAdmin && existingPhoto.owner_username !== username) {
             managerAlbum = existingPhoto.album_id
@@ -113,11 +140,19 @@ export class PhotoService {
             ? await this.validateAlbum(data.album_id, username, isAdmin)
             : undefined;
         const updates = Object.fromEntries(
-            ["title", "description", "url", "type", "price", "available"]
+            ["title", "description", "type", "price", "available"]
                 .filter((key) => data[key] !== undefined)
                 .map((key) => [key, data[key]])
         );
-        updates.watermarked = true;
+        if (!media && data.url !== undefined)
+            updates.url = data.url;
+        if (media) {
+            updates.url = media.url;
+            updates.original_file_path = media.original_file_path;
+            updates.preview_protected = true;
+            updates.type = "photo";
+        }
+        updates.watermarked = (data.type || existingPhoto.type) === "photo";
         if (data.album_id !== undefined) {
             updates.album_id = album?._id;
             if (album) {
@@ -136,7 +171,7 @@ export class PhotoService {
     }
 
     async delete(id, username, isAdmin = false) {
-        const existingPhoto = await this.photoRepo.findById(id);
+        const existingPhoto = await this.photoRepo.findById(id).select("+original_file_path");
         if (!existingPhoto)
             throw Object.assign(new Error("Foto no encontrada"), { status: 404 });
         let managerAlbum = null;
@@ -154,7 +189,7 @@ export class PhotoService {
                 ...(managerAlbum ? [{ album_id: existingPhoto.album_id }] : []),
             ],
         };
-        const deleted = await this.photoRepo.findOneAndDelete(filter);
+        const deleted = await this.photoRepo.findOneAndDelete(filter).select("+original_file_path");
         if (!deleted)
             throw Object.assign(new Error("Foto no encontrada"), { status: 404 });
         return deleted;

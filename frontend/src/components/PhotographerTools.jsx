@@ -16,11 +16,17 @@ import {
   respondToPhotographerCollaboration,
   updateAlbumOffers,
   updatePhotographerCoupon,
+  updatePhotographerSaleStatus,
   updateQuantityDiscount,
   updateStudioProfile,
 } from '../services/api';
 
 const currency = new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS' });
+const saleStatusLabels = {
+  pending: 'Pendiente',
+  paid: 'Abonado / pagado',
+  delivered: 'Enviado / entregado',
+};
 const sections = {
   sales: { title: 'Ventas', eyebrow: 'ACTIVIDAD COMERCIAL' },
   discounts: { title: 'Descuentos y paquetes', eyebrow: 'PROMOCIONES' },
@@ -325,6 +331,15 @@ export default function PhotographerTools({ token, username, isAdmin = false, vi
     await runSave(async () => { setStudio(await updateStudioProfile(token, studio)); }, 'Información de Studio guardada.');
   }
 
+  async function handleSaleStatusChange(sale, status) {
+    await runSave(async () => {
+      await updatePhotographerSaleStatus(token, getId(sale), status);
+      setSales((current) => current.map((item) => String(getId(item)) === String(getId(sale))
+        ? { ...item, status }
+        : item));
+    }, 'Se actualizó el estado de la venta.');
+  }
+
   const section = sections[view];
   if (!section) return null;
   const rangedSales = sales.filter((sale) => {
@@ -412,7 +427,7 @@ export default function PhotographerTools({ token, username, isAdmin = false, vi
                 </div>
                 <div className="photographer-sales-table-scroll">
                   <table>
-                    <thead><tr><th>Fecha</th><th>Cliente</th><th>Contenido</th><th>Monto</th><th>Recibís</th></tr></thead>
+                    <thead><tr><th>Fecha</th><th>Cliente</th><th>Contenido</th><th>Monto</th><th>Recibís</th><th>Estado</th></tr></thead>
                     <tbody>
                       {visibleSales.map((sale) => {
                         const client = sale.customer || {};
@@ -423,6 +438,23 @@ export default function PhotographerTools({ token, username, isAdmin = false, vi
                             <td><strong>{sale.photos?.length || 0} {sale.photos?.length === 1 ? 'elemento' : 'elementos'}</strong><span>{sale.photos?.map((photo) => photo?.title).filter(Boolean).join(', ')}</span></td>
                             <td>{currency.format(sale.total)}</td>
                             <td>{sale.status === 'paid' || sale.status === 'delivered' ? currency.format(sale.total) : <span className="photographer-sales-pending">Pendiente</span>}</td>
+                            <td>
+                              {isAdmin ? (
+                                <span>{saleStatusLabels[sale.status] || saleStatusLabels.pending}</span>
+                              ) : (
+                                <select
+                                  className="field photographer-sale-status"
+                                  aria-label={`Estado de la venta ${String(getId(sale)).slice(-8)}`}
+                                  value={sale.status || 'pending'}
+                                  disabled={saving}
+                                  onChange={(event) => handleSaleStatusChange(sale, event.target.value)}
+                                >
+                                  {Object.entries(saleStatusLabels).map(([status, label]) => (
+                                    <option key={status} value={status}>{label}</option>
+                                  ))}
+                                </select>
+                              )}
+                            </td>
                           </tr>
                         );
                       })}

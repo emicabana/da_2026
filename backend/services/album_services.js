@@ -93,7 +93,7 @@ export class AlbumService {
         if (!isAdmin && album.owner_username !== username)
             throw Object.assign(new Error("Solo el propietario puede eliminar este álbum."), { status: 403 });
 
-        const photos = await this.photoRepo.find({ album_id: album._id });
+        const photos = await this.photoRepo.find({ album_id: album._id }).select("+original_file_path");
         await this.photoRepo.deleteMany({ album_id: album._id });
         await this.couponRepo.deleteMany({ album_id: album._id });
         await this.collaboratorRepo.deleteMany({ album_id: album._id });

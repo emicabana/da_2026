@@ -21,7 +21,6 @@ export default async function checkAuthorizationTokenMiddleware(req, res, next) 
 
             req.session = session;
             req.session.role = normalizeRole(session.role);
-            console.log(session);
         }
         next();
     } catch (err) {
